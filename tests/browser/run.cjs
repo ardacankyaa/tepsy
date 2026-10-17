@@ -15,6 +15,7 @@ const checks = [
   "qr-menu",
   "qr-management",
   "layout-audit",
+  "font-fallback",
   "split-payments",
   "menu-photos",
   "responsive",

@@ -120,9 +120,11 @@
     padding-bottom: max(12px, env(safe-area-inset-bottom));
   }
   .form-actions > button {
-    flex: 1 1 110px;
+    flex: 1 1 max-content;
     min-width: 0;
+    max-width: 100%;
     padding: 8px 12px;
+    overflow-wrap: anywhere;
   }
   .report-sales-table thead {
     position: absolute;

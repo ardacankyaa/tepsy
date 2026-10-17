@@ -52,6 +52,8 @@ The old standalone smoke/UI snippets were superseded by isolated integration. De
 
 `layout-audit` measures search icon spacing, button text/icon collisions, clipped controls, checkout rows and cart prices across 255 views on 17 routes, dialogs and checkout states. It covers 320–1440px, Turkish/light and English/dark, long names and large amounts; browser exceptions fail the check.
 
+`font-fallback` checks kitchen controls, the floor editor header and menu dialog actions at 320–1024px in Turkish and English with a wider fallback font and increased letter spacing. It catches controls that fit only with one operating system's default font.
+
 `split-payments` checks equal-share rounding/advance, custom mixed cash/card installments, manual-card cancellation, per-payment receipts, totals, refresh/completed-table history and reprints. Integration verifies immutable receipt snapshots, multi-order grouping, role restrictions and printer output.
 
 `menu-photos` checks upload/save/reload, shared waiter/QR/POS photos, image failure/removal and phone/desktop layouts. Integration validates genuine normalized file uploads, bounded/invalid requests, public reads, role restrictions and restart persistence; files use a disposable image directory.

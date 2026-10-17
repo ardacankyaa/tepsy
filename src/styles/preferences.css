@@ -504,10 +504,22 @@
   .floor-editor-page .service-brand-mark {
     display: none;
   }
+  .floor-editor-page .service-toolbar {
+    flex-wrap: wrap;
+  }
+  .floor-editor-page .service-toolbar-leading {
+    flex: 1 1 140px;
+  }
+  .floor-editor-page .service-toolbar-actions {
+    flex: 0 0 auto;
+    max-width: 100%;
+  }
   .floor-editor-page .service-toolbar-actions > .service-button:not(.service-mobile-cart-trigger) {
     max-width: none;
     font-size: 12px;
     padding: 0 8px;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
   .floor-tool-disclosure > summary {
     font-size: 12px;
