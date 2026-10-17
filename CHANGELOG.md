@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Backups follow active installation environment and explicit source/destination options on all supported platforms.
+- Daily backup schedules honor custom backup directories; legacy paths remain supported.
+- Formatting is confined to publishable source and never traverses runtime/QA data.
+- Replaced the vulnerable development dependency chain; release verification now audits development packages too.
+- Updated CSS tooling with retained dialog placement and utility styling; verified Next lint rules with the current ESLint runtime.
+- Removed former sample business branding; existing restaurant identity and technical integrations are retained.
+
 ## 1.0.0 — October 2026
 
 ### Core

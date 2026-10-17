@@ -198,7 +198,7 @@ test("config GET returns setup defaults without persisting or completing setup",
   assert.equal(createCalls, 0);
   assert.equal(result.body.isSetupCompleted, false);
   assert.equal(result.body.hasAccessPassword, false);
-  assert.equal(result.body.restaurantName, "Gurme Kafe & Restoran");
+  assert.equal(result.body.restaurantName, "Restoranım");
 });
 
 test("config PUT rejects malformed identity fields before database writes", async () => {

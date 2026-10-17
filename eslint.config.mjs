@@ -2,6 +2,7 @@ import js from "@eslint/js";
 import globals from "globals";
 import hooks from "eslint-plugin-react-hooks";
 import next from "@next/eslint-plugin-next";
+import { fixupPluginRules } from "@eslint/compat";
 
 export default [
   { ignores: ["node_modules/**", ".next/**", ".restopos/**", ".tepsy/**", "dist/**", "docs/**"] },
@@ -42,7 +43,8 @@ export default [
     rules: { "react-hooks/rules-of-hooks": "error", "react-hooks/exhaustive-deps": "warn" },
   },
   {
-    plugins: { "@next/next": next },
+    // Keep these four syntax checks without the unpatched braces dependency in newer plugins.
+    plugins: { "@next/next": fixupPluginRules(next) },
     rules: {
       "@next/next/no-head-element": "error",
       "@next/next/no-duplicate-head": "error",

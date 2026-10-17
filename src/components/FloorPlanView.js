@@ -1012,7 +1012,7 @@ export default function FloorPlanView({
     >
       {/* Service/edit mode is intentionally explicit in every use of the shared canvas. */}
       {showModeBar && (
-        <div className="floor-mode-bar mb-2 flex flex-shrink-0 flex-wrap items-center justify-between gap-2 border-b border-[var(--border)] pb-2 text-xs">
+        <div className="floor-mode-bar mb-2 flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-[var(--border)] pb-2 text-xs">
           <div className="flex min-w-0 items-center gap-2 text-[var(--accent)]">
             <span
               role="status"
@@ -1098,7 +1098,7 @@ export default function FloorPlanView({
         <details className="floor-tool-disclosure floor-add-tools">
           <summary>{lang === "tr" ? "Masa ve dekor ekle" : "Add tables and decor"}</summary>
           <div
-            className="mb-2 flex flex-shrink-0 items-center gap-1.5 overflow-x-auto rounded-lg border border-[var(--border)] bg-[var(--surface)] p-1.5"
+            className="mb-2 flex shrink-0 items-center gap-1.5 overflow-x-auto rounded-lg border border-[var(--border)] bg-[var(--surface)] p-1.5"
             role="toolbar"
             aria-label={
               lang === "tr" ? "Krokiye masa ve öğe ekle" : "Add tables and floor-plan elements"
@@ -1141,7 +1141,7 @@ export default function FloorPlanView({
         <details className="floor-tool-disclosure floor-size-tools">
           <summary>{lang === "tr" ? "Salon ölçüleri" : "Venue dimensions"}</summary>
           <div
-            className="floorplan-canvas-settings mb-2 flex flex-shrink-0 flex-wrap items-end gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-2"
+            className="floorplan-canvas-settings mb-2 flex shrink-0 flex-wrap items-end gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-2"
             role="group"
             aria-label={lang === "tr" ? "Salon boyutu" : "Venue size"}
           >
@@ -1200,7 +1200,7 @@ export default function FloorPlanView({
         </details>
       )}
 
-      <div className="floorplan-zoom-bar mb-2 flex flex-shrink-0 flex-wrap items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2 py-1.5">
+      <div className="floorplan-zoom-bar mb-2 flex shrink-0 flex-wrap items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2 py-1.5">
         <div
           className="flex items-center gap-1"
           role="group"
@@ -1316,7 +1316,7 @@ export default function FloorPlanView({
             height: `${localCanvas.height * zoom}px`,
             backgroundSize: `${32 * zoom}px ${32 * zoom}px`,
           }}
-          className={`floorplan-stage bg-dot-grid relative flex-shrink-0 touch-none overflow-hidden rounded-[var(--radius-panel)] border border-[var(--border-strong)] ${activePan ? "is-panning" : ""}`}
+          className={`floorplan-stage bg-dot-grid relative shrink-0 touch-none overflow-hidden rounded-[var(--radius-panel)] border border-[var(--border-strong)] ${activePan ? "is-panning" : ""}`}
         >
           {isLoading ? (
             <div
@@ -1383,7 +1383,7 @@ export default function FloorPlanView({
       </div>
 
       {isEditable && selectedElementId && (
-        <div className="floorplan-selection-panel surface-soft mt-2 flex flex-shrink-0 flex-wrap items-center gap-3 p-3 text-xs">
+        <div className="floorplan-selection-panel surface-soft mt-2 flex shrink-0 flex-wrap items-center gap-3 p-3 text-xs">
           {(() => {
             const element = localElements.find((item) => item.id === selectedElementId);
             if (!element) return null;

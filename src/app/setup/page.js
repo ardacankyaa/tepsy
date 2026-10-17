@@ -56,7 +56,7 @@ const sampleCategories = [
     name: "Yemekler & Atıştırmalık",
     items: [
       {
-        name: "Gurme Burger",
+        name: "Özel Burger",
         price: 240,
         description: "180gr dana köfte, cheddar, patates kızartması",
       },
@@ -72,7 +72,7 @@ export default function SetupWizardPage() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [restaurantName, setRestaurantName] = useState("Gurme Kafe & Restoran");
+  const [restaurantName, setRestaurantName] = useState("Restoranım");
   const [restaurantCode, setRestaurantCode] = useState("");
   const [ownerPassword, setOwnerPassword] = useState("");
   const [ownerPasswordConfirm, setOwnerPasswordConfirm] = useState("");
@@ -228,7 +228,7 @@ export default function SetupWizardPage() {
 
   return (
     <div className="setup-wizard flex h-[calc(100dvh-var(--header-height))] w-full items-center justify-center overflow-hidden bg-[var(--canvas)] p-3 sm:p-6">
-      <section className="setup-wizard-card flex h-full max-h-[min(760px,calc(100dvh-2rem))] min-h-0 w-full max-w-3xl flex-col overflow-hidden rounded-[24px] border border-[var(--border)] bg-[var(--surface)] shadow-sm">
+      <section className="setup-wizard-card flex h-full max-h-[min(760px,calc(100dvh-2rem))] min-h-0 w-full max-w-3xl flex-col overflow-hidden rounded-[24px] border border-[var(--border)] bg-[var(--surface)] shadow-xs">
         <header className="flex shrink-0 items-center justify-between gap-4 border-b border-[var(--border)] px-5 py-4 sm:px-7">
           <div className="flex min-w-0 items-center gap-3">
             <div className="grid h-11 w-11 shrink-0 place-items-center rounded-[14px] bg-[var(--accent-soft)] text-[var(--accent)]">
@@ -288,9 +288,7 @@ export default function SetupWizardPage() {
                     type="text"
                     value={restaurantName}
                     onChange={(event) => setRestaurantName(event.target.value)}
-                    placeholder={
-                      isTr ? "Örn: Gurme Kafe & Restoran" : "Example: Gurme Cafe & Restaurant"
-                    }
+                    placeholder={isTr ? "Örn: İşletmenizin adı" : "Example: Your restaurant name"}
                   />
                 </label>
                 <p className="mt-2 text-sm text-[var(--text-secondary)]">

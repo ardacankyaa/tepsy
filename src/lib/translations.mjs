@@ -188,7 +188,7 @@ export const appTranslations = {
     selectCurrency: "Varsayılan Para Birimi",
     venueSectionsAndCounts: "Mekan Bölümleri ve Masa Sayıları",
     initialMenuSelection: "Başlangıç Menü Seçimi",
-    loadSampleMenu: "Örnek Gurme Menüsünü Yükle",
+    loadSampleMenu: "Örnek Menüyü Yükle",
     loadSampleMenuHint: "Kahveler, tatlılar ve yemekler hazır gelsin.",
     startBlankMenu: "Boş Menü ile Başla",
     startBlankMenuHint: "Tüm ürünleri kendiniz sıfırdan ekleyin.",

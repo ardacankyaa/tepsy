@@ -74,7 +74,7 @@ function ElementArtwork({ type, label, lang }) {
         <span className="flex items-end gap-2" aria-hidden="true">
           <span className="flex flex-col items-center">
             <i className="h-2.5 w-2.5 rounded-full bg-current" />
-            <i className="mt-1 h-6 w-2 rounded-sm bg-current" />
+            <i className="mt-1 h-6 w-2 rounded-xs bg-current" />
           </span>
           <span className="h-8 w-px bg-[#aab8a8]" />
           <span className="flex flex-col items-center">

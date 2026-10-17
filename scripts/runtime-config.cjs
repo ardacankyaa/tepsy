@@ -31,9 +31,21 @@ function resolveStateFile(filename, root = process.cwd()) {
   return fs.existsSync(modern) || !fs.existsSync(legacy) ? modern : legacy;
 }
 
-if (require.main === module) {
-  if (fs.existsSync(".env")) process.loadEnvFile(".env");
-  process.stdout.write(JSON.stringify(resolveRuntimeConfig()));
+function resolveBackupDirectory(env = process.env, root = process.cwd()) {
+  const configured = env.TEPSY_BACKUP_DIR || env.RESTOPOS_BACKUP_DIR;
+  return configured ? path.resolve(root, configured) : resolveStateFile("backups", root);
 }
 
-module.exports = { resolveRuntimeConfig, validateSessionSecret, resolveStateFile };
+if (require.main === module) {
+  if (fs.existsSync(".env")) process.loadEnvFile(".env");
+  process.stdout.write(
+    JSON.stringify({ ...resolveRuntimeConfig(), backupDirectory: resolveBackupDirectory() })
+  );
+}
+
+module.exports = {
+  resolveRuntimeConfig,
+  validateSessionSecret,
+  resolveStateFile,
+  resolveBackupDirectory,
+};

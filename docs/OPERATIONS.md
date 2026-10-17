@@ -106,6 +106,12 @@ python3 scripts/sqlite-restore.py --backup <file> --target <new.db>  # Restore
 ```
 
 - Backups use SQLite's consistent backup API with integrity verification
+- Run `npm run db:backup` from the active installation. It reads its `.env`,
+  database URL and backup-directory overrides, including legacy variables.
+  Explicit options take precedence:
+  `npm run db:backup -- --source "C:/TEPSY/data/restaurant.db" --dest-dir "C:/TEPSY/backups"`.
+- Python 3.8+ is selected automatically on Windows, macOS and Linux. The optional
+  Windows daily task uses the same database and backup-directory configuration.
 - Routine backups stored in `.tepsy/backups`, retaining 30 by default
 - Optional daily task: `powershell -File scripts/register-daily-backup.ps1`
 - **Always backup uploaded photos** (`.tepsy/menu-images`) alongside the database

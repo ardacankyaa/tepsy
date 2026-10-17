@@ -13,7 +13,7 @@ const reportOnly = process.env.TEPSY_UX_REPORT_ONLY === "1";
   const findings = [],
     scenes = [];
   let canSetup = false;
-  const restaurantName = "Gurme" + "X".repeat(75);
+  const restaurantName = "Örnek" + "X".repeat(75);
   await page.route("**/api/auth/status", (r) =>
     r.fulfill({
       json: {

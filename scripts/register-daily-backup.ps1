@@ -8,9 +8,10 @@ Push-Location -LiteralPath $projectRoot
 try {
   $runtimeJson = & node (Join-Path $PSScriptRoot 'runtime-config.cjs')
   if ($LASTEXITCODE -ne 0) { throw 'Invalid TEPSY runtime configuration.' }
-  $database = ($runtimeJson | ConvertFrom-Json).databasePath
+  $runtime = $runtimeJson | ConvertFrom-Json
+  $database = $runtime.databasePath
+  $destination = $runtime.backupDirectory
 } finally { Pop-Location }
-$destination = Join-Path $projectRoot '.tepsy\backups'
 $taskName = 'TEPSY-Daily-Backup'
 
 if (Get-ScheduledTask -TaskName 'RestoPOS-Daily-Backup' -ErrorAction SilentlyContinue) {

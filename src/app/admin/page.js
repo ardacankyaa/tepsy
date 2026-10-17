@@ -159,7 +159,7 @@ export default function AdminDashboardPage() {
                   disabled={currencySaving}
                   className={`w-6 h-6 rounded font-black text-xs transition-all ${
                     currency === c
-                      ? "primary-action shadow-sm"
+                      ? "primary-action shadow-xs"
                       : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-soft)]"
                   }`}
                   title={`${lang === "tr" ? "Para birimi" : "Currency"}: ${c}`}
@@ -239,7 +239,7 @@ export default function AdminDashboardPage() {
       )}
 
       {/* 4 Özet İstatistik Kutusu */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 flex-shrink-0">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 shrink-0">
         <div className="metric-card">
           <span className="eyebrow">{t("todayRevenueAdmin")}</span>
           <div className="text-xl font-semibold text-[var(--text-primary)] mt-1">

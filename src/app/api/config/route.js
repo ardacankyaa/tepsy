@@ -25,10 +25,10 @@ export async function GET() {
     const config = await prisma.restaurantConfig.findFirst();
     if (!config) {
       return NextResponse.json({
-        restaurantName: "Gurme Kafe & Restoran",
+        restaurantName: "Restoranım",
         restaurantLogoUrl: null,
         tagline: "Lezzetin ve Kalitenin Buluştuğu Yer",
-        restaurantCode: "RESTO",
+        restaurantCode: "TEPSY",
         currency: "₺",
         defaultLanguage: "tr",
         timeZone: "Europe/Istanbul",
@@ -123,7 +123,7 @@ export async function PUT(request) {
     if (!config) {
       config = await prisma.restaurantConfig.create({
         data: {
-          restaurantName: String(restaurantName || "Gurme Kafe & Restoran").trim(),
+          restaurantName: String(restaurantName || "Restoranım").trim(),
           restaurantLogoUrl: restaurantLogoUrl || null,
           ownerName: String(ownerName || "")
             .trim()
@@ -131,7 +131,7 @@ export async function PUT(request) {
           tagline: String(tagline || "")
             .trim()
             .slice(0, 180),
-          restaurantCode: normalizedCode || "RESTO",
+          restaurantCode: normalizedCode || "TEPSY",
           currency: currency || "₺",
           defaultLanguage: defaultLanguage || "tr",
           timeZone: timeZone || "Europe/Istanbul",

@@ -200,7 +200,7 @@ async function main() {
           icon: "Utensils",
           items: [
             {
-              name: "Gurme Burger",
+              name: "Özel Burger",
               price: 240,
               description: "180gr dana köfte, cheddar, patates kızartması",
             },

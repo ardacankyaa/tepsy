@@ -8,6 +8,8 @@ One Node.js server, one SQLite database. Staff use browsers on the local network
 
 Requires [Node.js 24+](https://nodejs.org/) and [Python 3.8+](https://www.python.org/).
 
+Supported browsers: Chrome 111+, Firefox 128+ and Safari 16.4+.
+
 On Windows, double-click [START.bat](START.bat). It sets up the local installation if
 needed, starts TEPSY, opens the browser and shows addresses for other devices on
 the same Wi-Fi or local network. Keep the server computer on during use.

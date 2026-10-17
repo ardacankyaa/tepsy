@@ -26,11 +26,7 @@ const commands = [
     process.platform === "win32" ? "py" : "python3",
     ["-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py"],
   ],
-  [
-    "production dependencies",
-    process.execPath,
-    [npmCli, "audit", "--omit=dev", "--audit-level=low"],
-  ],
+  ["production dependencies", process.execPath, [npmCli, "audit", "--audit-level=low"]],
   ["production build", process.execPath, [npmCli, "run", "build"]],
   ["managed demo installation", process.execPath, [npmCli, "run", "test:managed"]],
   ["isolated API/browser integration", process.execPath, [npmCli, "run", "test:integration"]],

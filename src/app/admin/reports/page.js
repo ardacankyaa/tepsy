@@ -107,7 +107,7 @@ export default function AdminReportsPage() {
                 aria-pressed={period === p.key}
                 className={`px-3 py-1 rounded text-xs font-bold transition-all ${
                   period === p.key
-                    ? "bg-[var(--accent)] text-[var(--accent-ink)] font-black shadow-sm"
+                    ? "bg-[var(--accent)] text-[var(--accent-ink)] font-black shadow-xs"
                     : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                 }`}
               >
@@ -119,7 +119,7 @@ export default function AdminReportsPage() {
           <button
             onClick={printZReport}
             disabled={loading || Boolean(loadError) || !reportData}
-            className="primary-action px-3 py-1 rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-ink)] font-black flex items-center gap-1 shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+            className="primary-action px-3 py-1 rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-ink)] font-black flex items-center gap-1 shadow-xs active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Printer className="w-3.5 h-3.5" />
             <span>{t("printZReport")}</span>
@@ -127,7 +127,7 @@ export default function AdminReportsPage() {
         </div>
       </div>
 
-      <div className="no-print grid grid-cols-2 lg:grid-cols-4 gap-2 mb-2 flex-shrink-0 text-xs">
+      <div className="no-print grid grid-cols-2 lg:grid-cols-4 gap-2 mb-2 shrink-0 text-xs">
         <div className="metric-card">
           <span className="text-xs text-[var(--text-muted)] font-bold">{t("totalRevenue")}</span>
           <div className="text-lg font-black text-[var(--text-primary)] mt-0.5">

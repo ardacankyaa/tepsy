@@ -160,10 +160,10 @@ model PaymentAttempt {
 // 7. Restoran Yapılandırması
 model RestaurantConfig {
   id                String   @id @default("config")
-  restaurantName    String   @default("Gurme Kafe & Restoran")
+  restaurantName    String   @default("Restoranım")
   restaurantLogoUrl String?
   ownerName          String?  @default("")
-  restaurantCode    String   @unique @default("RESTO")
+  restaurantCode    String   @unique @default("TEPSY")
   tagline           String?  @default("Lezzetin ve Kalitenin Buluştuğu Yer")
   currency          String   @default("₺") // İzin verilen değerler: ₺, $, €, £
   defaultLanguage   String   @default("tr") // İzin verilen değerler: tr, en

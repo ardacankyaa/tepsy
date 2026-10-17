@@ -52,7 +52,7 @@ export async function GET(request) {
     service: "tepsy",
     restaurantName: config?.restaurantName || "TEPSY",
     ownerName: config?.ownerName || "",
-    restaurantCode: config?.restaurantCode || "RESTO",
+    restaurantCode: config?.restaurantCode || "TEPSY",
     authEnabled: Boolean(config?.authEnabled && config?.accessPasswordHash),
     hasStaff: staffCount > 0,
     isSetupCompleted: Boolean(config?.isSetupCompleted),

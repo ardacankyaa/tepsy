@@ -14,13 +14,22 @@ Requires Node.js 24+. Python examples use Windows `py`; use `python3` on Linux/C
 
 ## Full release gate
 
+`npm run format` and `npm run format:check` only visit publishable source files.
+Private state, backups and QA output are never traversed or rewritten.
+
+`backup-cli`, `runtime-config` and Python regressions cover configured/legacy
+database paths, explicit backup options, verified copies and retained source data.
+`lint-compat` verifies all four configured Next syntax rules against the installed
+ESLint runtime. `product-branding` prevents former product identities from returning
+to published UI copy while retaining technical compatibility identifiers.
+
 `npm run verify:release` runs all checks and records the source fingerprint and evidence under `.tepsy/qa/`. The equivalent individual checks are:
 
 ```powershell
 npm run format:check
 npm run lint
 npm run release:check
-npm audit --omit=dev --audit-level=low
+npm audit --audit-level=low
 npm test
 py -m unittest discover -s tests -p 'test_*.py'
 npm run build
