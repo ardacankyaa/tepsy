@@ -1,0 +1,267 @@
+/* Shared device behavior: readable forms and reachable panels. */
+@media screen {
+  .dialog-heading h2 {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .dialog-heading .icon-action {
+    flex: 0 0 44px;
+  }
+  .form-actions {
+    flex-wrap: wrap;
+  }
+  .page-range {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .scroll-panel-controls {
+    flex-wrap: wrap;
+  }
+  .scroll-panel-controls > span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .workspace-topbar {
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+  .workspace-dialog {
+    max-height: calc(
+      100dvh - max(16px, env(safe-area-inset-top)) - max(16px, env(safe-area-inset-bottom))
+    );
+  }
+  .workspace-dialog .dialog-content {
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+  }
+}
+@media screen and (pointer: coarse) {
+  :root {
+    --header-height: 52px;
+  }
+  .app-shell .workspace-topbar {
+    min-height: 52px;
+  }
+  .nav-language button,
+  .segmented-control button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .app-shell input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  .app-shell select,
+  .app-shell textarea {
+    font-size: 16px !important;
+  }
+  .app-shell .workspace-search-control > input {
+    min-height: 42px;
+  }
+  .legal-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  .admin-experience button {
+    min-height: 44px;
+  }
+}
+@media screen and (max-width: 959px) {
+  body.app-shell > main:has(> .admin-experience:not(.settings-experience)) {
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+  .admin-experience:not(.settings-experience) {
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+  }
+  .admin-experience .menu-management-layout {
+    flex: 0 0 auto;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .menu-management-layout > section {
+    height: clamp(480px, 65dvh, 560px);
+    flex-shrink: 0;
+  }
+  .admin-experience .menu-add-panel {
+    max-height: none;
+  }
+  .admin-experience .menu-add-panel .scroll-panel {
+    flex: none;
+  }
+  .admin-experience .menu-add-panel .scroll-panel-content {
+    overflow: visible;
+  }
+  .admin-experience .menu-add-panel .form-stack {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+  .menu-add-panel .form-stack > .menu-photo-editor,
+  .menu-add-panel .form-stack > button,
+  .menu-add-panel .form-stack > p {
+    grid-column: 1/-1;
+  }
+  .reports-experience > .report-details {
+    flex: none;
+  }
+  .reports-experience .report-details > .surface-panel {
+    min-height: 260px;
+  }
+  .reports-experience .report-details > .surface-panel:first-child {
+    height: 460px;
+  }
+}
+@media screen and (max-width: 600px) {
+  .dialog-heading {
+    gap: 10px;
+    padding: 12px;
+  }
+  .workspace-dialog .dialog-content {
+    padding: 12px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+  .form-actions > button {
+    flex: 1 1 110px;
+    min-width: 0;
+    padding: 8px 12px;
+  }
+  .report-sales-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .report-sales-table tbody {
+    display: block;
+  }
+  .report-sales-table tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    padding: 12px 4px;
+    gap: 6px 12px;
+  }
+  .report-sales-table td {
+    min-width: 0;
+    padding: 0;
+    overflow-wrap: anywhere;
+  }
+  .report-sales-table td:nth-child(1),
+  .report-sales-table td:nth-child(2) {
+    grid-column: 1/-1;
+  }
+  .report-sales-table td:nth-child(1) {
+    font-size: 14px;
+  }
+  .report-sales-table td:nth-child(3) {
+    text-align: left;
+  }
+  .report-sales-table td:nth-child(3)::before,
+  .report-sales-table td:nth-child(4)::before {
+    content: attr(data-label) " ";
+    display: block;
+    color: var(--text-secondary);
+    font-weight: 400;
+  }
+}
+@media screen and (pointer: coarse) {
+  .floorplan-zoom-bar button,
+  .floor-mode-bar button,
+  .floor-tool-disclosure button,
+  .admin-experience .secondary-action {
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+}
+@media screen and (pointer: coarse) {
+  .admin-experience .primary-action {
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+}
+
+/* New business onboarding must remain usable with short screens and long names. */
+.login-story,
+.login-access,
+.login-access-card,
+.login-access-heading,
+.login-story-content {
+  min-width: 0;
+}
+.login-access-heading h2,
+.login-kicker {
+  overflow-wrap: anywhere;
+}
+.login-role-list {
+  flex-wrap: wrap;
+}
+.login-role-list > div {
+  min-width: 0;
+  max-width: 100%;
+}
+.login-role-list > div > span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.login-role-icon {
+  flex-shrink: 0;
+}
+.setup-wizard {
+  height: 100%;
+}
+.setup-wizard-card .page-title,
+.setup-wizard-card header p {
+  overflow-wrap: anywhere;
+}
+@media screen and (max-width: 959px), screen and (max-height: 640px) {
+  .login-page {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+  }
+  .login-story {
+    padding: 20px 24px;
+    border: 0;
+    gap: 12px;
+  }
+  .login-story-content,
+  .login-role-list,
+  .login-local-note {
+    display: none;
+  }
+  .login-access {
+    padding: 12px 24px 32px;
+    align-items: flex-start;
+  }
+  .login-access-card {
+    max-width: 480px;
+  }
+}
+@media screen and (max-height: 640px) {
+  .setup-wizard {
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+    align-items: flex-start;
+  }
+  .setup-wizard-card {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+  .setup-wizard-card > .scroll-panel {
+    flex: none;
+    min-height: 0;
+  }
+  .setup-wizard-card .scroll-panel-content {
+    overflow: visible;
+    flex: none;
+  }
+  .setup-wizard-card .scroll-panel-controls {
+    display: none;
+  }
+}
+@media screen and (max-width: 600px) {
+  .setup-wizard-card .page-title {
+    font-size: 22px;
+    line-height: 1.25;
+  }
+}

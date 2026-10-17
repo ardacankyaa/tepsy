@@ -1,0 +1,233 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// 1. Masa Modeli
+model Table {
+  id          String      @id @default(cuid())
+  tableNumber String      @unique
+  capacity    Int         @default(4)
+  section     String      @default("İç Mekan")
+  status      String      @default("AVAILABLE") // İzin verilen değerler: AVAILABLE, OCCUPIED, BILL_REQUESTED
+  posX        Float       @default(20) // Kroki X koordinatı (0-100%)
+  posY        Float       @default(20) // Kroki Y koordinatı (0-100%)
+  shape       String      @default("SQUARE") // İzin verilen değerler: ROUND, SQUARE, RECTANGLE
+  width       Int         @default(96) // Piksel genişlik
+  height      Int         @default(96) // Piksel yükseklik
+  isArchived  Boolean     @default(false)
+  qrToken     String?     @unique
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  orders      Order[]
+  serviceRequests ServiceRequest[]
+
+  @@index([section])
+  @@index([status])
+  @@index([isArchived])
+}
+
+// 2. Kategori Modeli
+model Category {
+  id        String      @id @default(cuid())
+  name      String      @unique
+  icon      String?     @default("Utensils")
+  sortOrder Int         @default(0)
+  items     MenuItem[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+// 3. Menü Ürünü Modeli
+model MenuItem {
+  id          String      @id @default(cuid())
+  name        String
+  price       Decimal
+  description String?
+  imageUrl    String?
+  isAvailable Boolean     @default(true)
+  categoryId  String
+  category    Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  orderItems  OrderItem[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([categoryId])
+  @@index([isAvailable])
+}
+
+// 4. Sipariş (Adisyon) Modeli
+model Order {
+  id          String      @id @default(cuid())
+  tableId     String?
+  table       Table?      @relation(fields: [tableId], references: [id], onDelete: SetNull)
+  status      String      @default("PENDING") // İzin verilen değerler: PENDING, PREPARING, READY, DELIVERED, PAID, CANCELLED
+  source      String      @default("STAFF")
+  idempotencyKey String?   @unique
+  requestFingerprint String?
+  totalPrice  Decimal     @default(0)
+  discountPercent Decimal  @default(0)
+  discountAmount  Decimal  @default(0)
+  discountReason  String?
+  notes       String?
+  items       OrderItem[]
+  payments    Payment[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([status])
+  @@index([tableId])
+  @@index([createdAt])
+}
+
+// 5. Sipariş Kalemi Modeli
+model OrderItem {
+  id         String    @id @default(cuid())
+  orderId    String
+  order      Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId String
+  menuItem   MenuItem  @relation(fields: [menuItemId], references: [id])
+  quantity   Int       @default(1)
+  unitPrice  Decimal
+  menuItemName String?
+  menuItemCategoryName String?
+  notes      String?
+  status     String    @default("PENDING") // İzin verilen değerler: PENDING, PREPARING, READY, CANCELLED
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([orderId])
+  @@index([status])
+}
+
+// 6. Ödeme Modeli
+model Payment {
+  id            String    @id @default(cuid())
+  orderId       String
+  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  cashShiftId   String?
+  cashShift     CashShift? @relation(fields: [cashShiftId], references: [id], onDelete: SetNull)
+  amountPaid    Decimal
+  paymentMethod String    // İzin verilen değerler: CASH, CREDIT_CARD, OTHER
+  idempotencyKey String?
+  requestFingerprint String?
+  createdAt     DateTime  @default(now())
+
+  @@index([orderId])
+  @@index([cashShiftId])
+  @@index([paymentMethod])
+  @@index([createdAt])
+  @@unique([idempotencyKey, orderId])
+}
+
+model CashShift {
+  id                 String    @id @default(cuid())
+  activeKey          String?   @unique
+  status             String    @default("OPEN")
+  openingCash        Decimal   @default(0)
+  closingCash        Decimal?
+  expectedCash       Decimal?
+  cashDifference     Decimal?
+  cashPayments       Decimal   @default(0)
+  cardPayments       Decimal   @default(0)
+  otherPayments      Decimal   @default(0)
+  paymentCount       Int       @default(0)
+  paymentsSnapshot   String    @default("[]")
+  openingNote        String?
+  closingNote        String?
+  openedById         String?
+  closedById         String?
+  openedAt           DateTime  @default(now())
+  closedAt           DateTime?
+  payments           Payment[]
+
+  @@index([status, openedAt])
+  @@index([closedAt])
+}
+
+model PaymentAttempt {
+  id                 String   @id @default(cuid())
+  idempotencyKey     String   @unique
+  requestFingerprint String
+  responseJson       String
+  createdAt          DateTime @default(now())
+}
+
+// 7. Restoran Yapılandırması
+model RestaurantConfig {
+  id                String   @id @default("config")
+  restaurantName    String   @default("Gurme Kafe & Restoran")
+  restaurantLogoUrl String?
+  ownerName          String?  @default("")
+  restaurantCode    String   @unique @default("RESTO")
+  tagline           String?  @default("Lezzetin ve Kalitenin Buluştuğu Yer")
+  currency          String   @default("₺") // İzin verilen değerler: ₺, $, €, £
+  defaultLanguage   String   @default("tr") // İzin verilen değerler: tr, en
+  timeZone          String   @default("Europe/Istanbul")
+  authEnabled       Boolean  @default(false)
+  qrOrderEnabled    Boolean  @default(false)
+  accessPasswordHash String?
+  isSetupCompleted  Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// Yerel ağdaki personel kimlikleri. PIN değerleri hiçbir zaman düz metin tutulmaz.
+model StaffUser {
+  id        String   @id @default(cuid())
+  name      String
+  role      String   @default("WAITER") // İzin verilen değerler: ADMIN, WAITER, KITCHEN, CASHIER
+  pinHash   String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([role])
+  @@index([isActive])
+}
+
+// Kroki üzerinde masalardan bağımsız mimari ve dekoratif öğeler.
+model FloorElement {
+  id        String   @id @default(cuid())
+  section   String   @default("İç Mekan")
+  type      String   // İzin verilen değerler: WALL, DOOR, WINDOW, WC, BAR, KITCHEN, PLANT, COUNTER, LABEL
+  label     String?
+  posX      Float    @default(20)
+  posY      Float    @default(20)
+  width     Int      @default(96)
+  height    Int      @default(48)
+  rotation  Int      @default(0)
+  color     String?
+  locked    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([section])
+  @@index([type])
+}
+
+// Canvas dimensions are stored separately for each named floor-plan section.
+model FloorPlanSection {
+  section   String   @id
+  width     Int      @default(720)
+  height    Int      @default(450)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ServiceRequest {
+  id        String   @id @default(cuid())
+  tableId   String
+  table     Table    @relation(fields: [tableId], references: [id])
+  type      String
+  status    String   @default("OPEN")
+  createdAt DateTime @default(now())
+  resolvedAt DateTime?
+
+  @@index([tableId, type, createdAt])
+  @@index([status, createdAt])
+}

@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test & Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npx playwright install --with-deps chromium
+      - run: npm run verify:release
+        env:
+          TEPSY_BROWSER: chromium
+          NEXT_TELEMETRY_DISABLED: "1"
+      - run: npm run release:package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tepsy-source-release
+          path: |
+            dist/*.zip
+            dist/*.sha256
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: tepsy-test-results
+          include-hidden-files: true
+          path: |
+            .tepsy/qa/integration-*/results.json
+            .tepsy/qa/release-*/verification.json
+            .tepsy/qa/integration-*/browser-results.json
+            .tepsy/qa/integration-*/fixtures/*-results.json
+          retention-days: 7
+
+  managed-install:
+    name: Fresh demo (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: npm ci
+      - run: npm run test:managed
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: managed-install-${{ matrix.os }}
+          include-hidden-files: true
+          path: .tepsy/qa/managed-demo-*/*.log
+          retention-days: 7

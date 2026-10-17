@@ -1,0 +1,672 @@
+.pos-split-payments,
+.pos-payment-history {
+  min-width: 0;
+  color: var(--text-primary);
+}
+.pos-split-payments {
+  display: grid;
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-inset);
+}
+.pos-split-payments h4,
+.pos-payment-history h4 {
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+}
+.pos-split-payments h4 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.pos-split-payments p,
+.pos-payment-history p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  overflow-wrap: anywhere;
+}
+.pos-split-tools {
+  display: flex;
+  align-items: end;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+.pos-split-tools label {
+  display: grid;
+  flex: 1 1 100px;
+  gap: 5px;
+  font-size: 12px;
+}
+.operations-pos .pos-split-tools input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--control-border);
+  border-radius: 10px;
+  color: var(--text-primary);
+  background: var(--surface);
+  font-size: 14px;
+}
+.pos-split-tools button,
+.pos-split-plan button,
+.pos-history-pages button {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--control-border);
+  border-radius: 10px;
+  color: var(--text-primary);
+  background: var(--surface);
+  font-size: 13px;
+  cursor: pointer;
+}
+.pos-split-plan {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(94px, 1fr));
+  gap: 7px;
+  max-height: 180px;
+  overflow: auto;
+}
+.pos-split-plan button {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  text-align: left;
+}
+.pos-split-plan strong {
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.pos-split-plan button[aria-pressed="true"] {
+  border-color: var(--accent);
+  outline: 1px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+.pos-split-plan button:disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+.pos-split-paid {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+}
+.pos-split-payments .pos-split-error,
+.pos-history-error p {
+  color: var(--danger);
+}
+.pos-payment-history {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  display: grid;
+  gap: 9px;
+}
+.pos-payment-history header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.pos-payment-history header > span {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.pos-history-summary {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+}
+.pos-history-summary > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+.pos-history-summary dt {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.pos-history-summary dd {
+  margin: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.pos-history-total {
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+}
+.pos-payment-entries {
+  max-height: 248px;
+  overflow: auto;
+  min-width: 0;
+}
+.pos-payment-entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 44px;
+  gap: 8px;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+}
+.pos-payment-entry > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.pos-payment-entry > div > span {
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 16px;
+}
+.pos-history-amount {
+  text-align: right;
+  max-width: 130px;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.pos-history-receipt {
+  display: grid;
+  min-width: 44px;
+  min-height: 44px;
+  place-content: center;
+  gap: 2px;
+  border: 1px solid var(--control-border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 10px;
+  cursor: pointer;
+}
+.pos-history-receipt svg {
+  justify-self: center;
+}
+.pos-history-pages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pos-history-error {
+  display: grid;
+  gap: 6px;
+}
+.pos-history-dialog {
+  width: min(720px, calc(100vw - 24px));
+}
+.pos-history-dialog .pos-payment-entries {
+  max-height: 45dvh;
+}
+.pos-history-filter {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+.pos-history-filter select {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--control-border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text-primary);
+}
+.operations-pos .pos-checkout-layout {
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.operations-pos .pos-ledger {
+  flex: 1 0 150px;
+}
+.operations-pos .pos-item-scroll {
+  max-height: 280px;
+}
+.operations-pos .pos-payment-panel {
+  flex-shrink: 0;
+}
+@media (min-width: 1320px) {
+  .operations-pos .pos-checkout-layout {
+    overflow: hidden;
+  }
+  .operations-pos .pos-ledger {
+    min-height: 0;
+  }
+  .operations-pos .pos-item-scroll {
+    max-height: none;
+  }
+  .operations-pos .pos-payment-panel {
+    overflow: auto;
+  }
+}
+@media (max-width: 370px) {
+  .pos-history-amount {
+    max-width: 86px;
+  }
+  .pos-split-payments {
+    padding: 9px;
+  }
+  .pos-payment-entry {
+    gap: 5px;
+  }
+}
+.receipt-paper-number {
+  flex-basis: 100%;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+.receipt-paper-context {
+  flex-wrap: wrap;
+}
+.pos-menu-result:has(.menu-photo-pos) > span:nth-child(2) {
+  display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 2px;
+}
+.pos-discount-locked {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+@media (max-width: 600px) {
+  .operations-pos .pos-command-bar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .operations-pos .pos-command-brand {
+    grid-column: 1/-1;
+    grid-row: 1;
+  }
+  .operations-pos .pos-section-picker {
+    grid-column: 1/-1;
+    grid-row: 2;
+  }
+  .operations-pos .pos-command-actions {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr);
+    grid-column: 1/-1;
+    grid-row: 3;
+    gap: 7px;
+  }
+  .operations-pos .pos-command-actions .pos-command-button {
+    min-width: 0;
+    min-height: 44px;
+    font-size: 12px;
+    line-height: 16px;
+    padding: 6px;
+    white-space: normal;
+  }
+  .operations-pos .pos-shift-status {
+    justify-content: center;
+    min-height: 44px;
+  }
+}
+
+/* Size the account by its own available width, including the desktop sidebar. */
+.operations-pos .pos-checkout-panel {
+  container: pos-checkout / inline-size;
+}
+.operations-pos .pos-ledger {
+  container: pos-ledger / inline-size;
+}
+.operations-pos .pos-checkout-context > div {
+  min-width: 0;
+}
+.operations-pos .pos-checkout-heading-line {
+  flex-wrap: wrap;
+}
+.operations-pos .pos-checkout-heading-line h2 {
+  overflow-wrap: anywhere;
+}
+.operations-pos .pos-checkout-header-actions {
+  flex-shrink: 0;
+}
+.operations-pos .pos-table-card-status {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.operations-pos .pos-table-card strong {
+  white-space: normal;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}
+.operations-pos .pos-table-card-status i {
+  flex-shrink: 0;
+}
+.operations-pos .pos-payment-breakdown > div,
+.operations-pos .pos-shift-summary > div {
+  min-width: 0;
+}
+.operations-pos .pos-payment-breakdown dt,
+.operations-pos .pos-payment-breakdown dd,
+.operations-pos .pos-shift-summary dt,
+.operations-pos .pos-shift-summary dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.operations-pos .pos-payment-breakdown dd,
+.operations-pos .pos-shift-summary dd {
+  max-width: 60%;
+}
+.operations-pos .pos-command-button,
+.operations-pos .pos-command-link,
+.operations-pos .pos-section-picker select,
+.operations-pos .pos-table-view-toggle button,
+.operations-pos .pos-mobile-switch button,
+.operations-pos .pos-back-to-tables,
+.operations-pos .pos-add-item-button,
+.operations-pos .pos-close-account,
+.operations-pos .pos-preview-button,
+.operations-pos .pos-discount-presets button,
+.operations-pos .pos-item-scroll .scroll-panel-controls button,
+.operations-pos .page-controls .icon-action,
+.operations-pos .page-select select,
+.operations-pos .workspace-dialog .dialog-heading .icon-action {
+  min-width: 44px;
+  min-height: 44px;
+}
+.operations-pos .pos-remove-item {
+  width: 44px;
+  height: 44px;
+}
+.operations-pos .pos-close-account,
+.operations-pos .workspace-dialog .dialog-heading .icon-action {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+.operations-pos .pos-discount-fields input,
+.operations-pos .pos-partial-field input,
+.operations-pos .pos-split-tools input,
+.operations-pos .pos-section-picker select,
+.operations-pos .pos-history-filter select,
+.operations-pos .pos-menu-search-control input {
+  font-size: 16px;
+  min-height: 44px;
+}
+.operations-pos .pos-item-line {
+  grid-template-columns: 34px minmax(0, 1fr) minmax(74px, auto) 44px;
+}
+.operations-pos .workspace-dialog .dialog-heading h2 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.operations-pos .pos-menu-result-price {
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.operations-pos .pos-menu-result-price svg {
+  flex-shrink: 0;
+}
+
+@container pos-checkout (max-width:720px) {
+  .operations-pos .pos-checkout-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding-top: 0;
+    overflow: auto;
+  }
+  .operations-pos .pos-ledger {
+    flex: 0 0 auto;
+    min-height: 150px;
+    max-height: 330px;
+    padding-right: 0;
+    border-right: 0;
+  }
+  .operations-pos .pos-item-scroll {
+    max-height: 280px;
+  }
+  .operations-pos .pos-payment-panel {
+    flex: 0 0 auto;
+    overflow: visible;
+    padding: 12px 0 0;
+    border-top: 1px solid var(--border);
+  }
+}
+@container pos-checkout (max-width:420px) {
+  .operations-pos .pos-checkout-header {
+    flex-wrap: wrap;
+  }
+  .operations-pos .pos-checkout-context {
+    flex-basis: 100%;
+  }
+  .operations-pos .pos-checkout-header-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+@container pos-ledger (max-width:340px) {
+  .operations-pos .pos-item-line {
+    grid-template-columns: 28px minmax(0, 1fr) 44px;
+    gap: 4px 6px;
+    align-items: start;
+  }
+  .operations-pos .pos-item-quantity {
+    padding-top: 10px;
+  }
+  .operations-pos .pos-item-description {
+    grid-column: 2;
+    grid-row: 1;
+    padding-top: 7px;
+  }
+  .operations-pos .pos-item-line-total {
+    grid-column: 2;
+    grid-row: 2;
+    text-align: left;
+    padding-bottom: 5px;
+  }
+  .operations-pos .pos-remove-item {
+    grid-column: 3;
+    grid-row: 1 / 3;
+  }
+}
+@media (max-width: 760px) {
+  .operations-pos .pos-add-item-button {
+    width: 44px;
+  }
+  .operations-pos .pos-mobile-switch button {
+    flex-wrap: wrap;
+    padding: 8px;
+  }
+  .operations-pos .pos-mobile-switch button span {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+  .operations-pos .pos-table-card-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(130px, 100%), 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .operations-pos .pos-menu-result {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 5px 10px;
+  }
+  .operations-pos .pos-menu-result-price {
+    grid-column: 1/-1;
+    grid-row: 2;
+    justify-content: space-between;
+  }
+  .operations-pos .pos-menu-result:has(.menu-photo-pos) {
+    grid-template-columns: 48px minmax(0, 1fr);
+  }
+  .operations-pos .pos-menu-result .menu-photo-pos {
+    grid-column: 1;
+    grid-row: 1/3;
+  }
+  .operations-pos .pos-menu-result:has(.menu-photo-pos) > span:nth-child(2),
+  .operations-pos .pos-menu-result:has(.menu-photo-pos) .pos-menu-result-price {
+    grid-column: 2;
+  }
+}
+/* Landscape phones and split-screen windows need page scrolling, not a 60px account. */
+@media (max-height: 600px) {
+  .operations-pos {
+    height: auto;
+    min-height: calc(100dvh - var(--header-height, 44px));
+    overflow: visible;
+  }
+  .operations-pos .pos-main {
+    flex: 1 0 auto;
+    min-height: 420px;
+  }
+  .operations-pos .pos-table-selector,
+  .operations-pos .pos-checkout-panel {
+    height: auto;
+    min-height: 420px;
+  }
+  .operations-pos .pos-checkout-layout {
+    overflow: visible;
+  }
+  .operations-pos .pos-payment-panel {
+    overflow: visible;
+  }
+  .operations-pos .pos-floorplan-panel {
+    min-height: 360px;
+  }
+}
+
+/* A direct checkout path; secondary tools open only when needed. */
+.pos-options {
+  min-width: 0;
+  border-top: 1px solid var(--border);
+}
+.pos-options > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 48px;
+  padding: 10px 2px;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  list-style: none;
+}
+.pos-options > summary::-webkit-details-marker {
+  display: none;
+}
+.pos-options > summary::after {
+  content: "+";
+  font-size: 22px;
+  font-weight: 400;
+  flex-shrink: 0;
+}
+.pos-options[open] > summary::after {
+  content: "−";
+}
+.pos-options > summary > span {
+  margin-left: auto;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.pos-options[open] {
+  padding-bottom: 12px;
+}
+.pos-options > summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+.pos-discount-disclosure .pos-discount-fields {
+  margin-top: 10px;
+}
+.pos-history-disclosure .pos-payment-history {
+  border-top: 0;
+}
+.operations-pos .pos-payment-breakdown {
+  background: var(--surface);
+  padding: 4px 0 12px;
+  gap: 6px;
+}
+.operations-pos .pos-payment-breakdown .pos-remaining-row {
+  padding-top: 10px;
+}
+.operations-pos .pos-payment-breakdown .pos-remaining-row dd {
+  font-size: 30px;
+  line-height: 1.2;
+}
+.pos-method-hint {
+  margin: 4px 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 20px;
+}
+.operations-pos .pos-payment-methods button {
+  min-height: 58px;
+  font-size: 14px;
+  flex-direction: row;
+  gap: 7px;
+}
+.pos-collection-amount {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 14px;
+}
+.pos-collection-amount strong {
+  font-size: 20px;
+  overflow-wrap: anywhere;
+}
+.operations-pos .pos-menu-result:has(.menu-photo-pos) {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  gap: 8px 14px;
+  padding: 12px;
+}
+.operations-pos .pos-menu-result .menu-photo-pos {
+  width: 104px;
+  height: 104px;
+  grid-column: 1;
+  grid-row: 1/3;
+}
+.operations-pos .pos-menu-result:has(.menu-photo-pos) > span:nth-child(2) {
+  grid-column: 2;
+  grid-row: 1;
+}
+.operations-pos .pos-menu-result:has(.menu-photo-pos) .pos-menu-result-price {
+  grid-column: 2;
+  grid-row: 2;
+  justify-content: space-between;
+}
+@media (max-width: 370px) {
+  .operations-pos .pos-menu-result:has(.menu-photo-pos) {
+    grid-template-columns: 96px minmax(0, 1fr);
+    gap: 8px 10px;
+  }
+  .operations-pos .pos-menu-result .menu-photo-pos {
+    width: 96px;
+    height: 96px;
+  }
+  .operations-pos .pos-payment-methods button {
+    font-size: 12px;
+    flex-direction: column;
+  }
+  .operations-pos .pos-payment-breakdown .pos-remaining-row dd {
+    font-size: 26px;
+  }
+}

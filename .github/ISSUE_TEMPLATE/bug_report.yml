@@ -1,0 +1,30 @@
+name: Bug report
+description: Report a reproducible problem in TEPSY.
+title: "[Bug]: "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Include the screen, account role and actions. Use synthetic data.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: TEPSY version, OS, Node version, browser, screen size, demo or real installation.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Screenshots or logs
+      description: Remove restaurant data, passwords, session cookies and table QR tokens before sharing.

@@ -1,0 +1,68 @@
+{
+  "name": "tepsy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TEPSY — local-network restaurant orders, kitchen, floor plan and checkout",
+  "main": "server.js",
+  "scripts": {
+    "dev": "node server.js",
+    "build": "next build",
+    "lint": "eslint . --max-warnings 0",
+    "release:check": "node scripts/check-release.cjs",
+    "verify:release": "node scripts/verify-release.cjs",
+    "release:package": "node scripts/package-release.cjs",
+    "test:integration": "node tests/integration/run.cjs",
+    "start": "node server.js --production",
+    "test": "node --test --test-isolation=none tests/*.test.cjs tests/*.test.mjs src/lib/*.test.mjs",
+    "test:ui": "node tests/browser/run.cjs",
+    "db:push": "prisma db push",
+    "db:seed": "node prisma/seed.js",
+    "db:backup": "py scripts/sqlite-backup.py",
+    "db:studio": "prisma studio",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "setup": "node scripts/local-app.cjs setup",
+    "start:local": "node scripts/local-app.cjs start",
+    "stop:local": "node scripts/local-app.cjs stop",
+    "demo": "node scripts/local-app.cjs demo",
+    "demo:stop": "node scripts/local-app.cjs demo-stop",
+    "local:paths": "node scripts/local-app.cjs paths",
+    "test:managed": "node tests/managed-demo.cjs"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.19.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.441.0",
+    "next": "15.5.28",
+    "qrcode": "^1.5.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "sharp": "0.35.5",
+    "socket.io": "^4.7.5",
+    "socket.io-client": "^4.7.5",
+    "tailwind-merge": "^2.5.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@next/eslint-plugin-next": "15.5.28",
+    "autoprefixer": "^10.4.20",
+    "eslint": "10.11.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "16.5.0",
+    "playwright": "1.62.1",
+    "postcss": "8.5.28",
+    "prettier": "3.9.10",
+    "prisma": "^5.19.1",
+    "tailwindcss": "^3.4.11"
+  },
+  "overrides": {
+    "postcss": "8.5.28",
+    "engine.io": "6.6.11",
+    "sharp": "0.35.5",
+    "source-map-js": "1.2.2",
+    "postcss-selector-parser": "7.1.6"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

@@ -1,0 +1,3318 @@
+/* Kitchen display: responsive workstation with light and dark mode support. */
+.operations-kds {
+  color-scheme: light;
+  --kds-canvas: #f5f5f7;
+  --kds-surface: #ffffff;
+  --kds-inset: #ededf2;
+  --kds-text: #1d1d1f;
+  --kds-muted: #626269;
+  --kds-action: #0066cc;
+  --kds-on-action: #ffffff;
+  --kds-selected: #eaf2ff;
+  --kds-separator: #e3e3e8;
+  --kds-control: #85858c;
+  --kds-success: #176c46;
+  --kds-success-bg: #eaf7ef;
+  --kds-warning: #9b4a00;
+  --kds-warning-bg: #fff3df;
+  --kds-danger: #b42318;
+  --kds-danger-bg: #fff0ed;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  height: calc(100dvh - var(--header-height, 64px));
+  min-height: 0;
+  overflow: hidden;
+  padding: 12px 16px 16px;
+  color: var(--kds-text);
+  background: var(--kds-canvas);
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+html[data-theme="dark"] .operations-kds {
+  color-scheme: dark;
+  --kds-canvas: #17181c;
+  --kds-surface: #232429;
+  --kds-inset: #2c2d33;
+  --kds-text: #f5f5f7;
+  --kds-muted: #b7b8c2;
+  --kds-action: #8cc2ff;
+  --kds-on-action: #0a2342;
+  --kds-selected: #203b5b;
+  --kds-separator: #41434d;
+  --kds-control: #888b97;
+  --kds-success: #84dda5;
+  --kds-success-bg: #163225;
+  --kds-warning: #ffd28a;
+  --kds-warning-bg: #3a2c19;
+  --kds-danger: #ffb4aa;
+  --kds-danger-bg: #422723;
+  color: var(--kds-text);
+  background: var(--kds-canvas);
+}
+
+.operations-kds.is-fullscreen {
+  height: 100dvh;
+}
+.operations-kds *,
+.operations-pos * {
+  box-sizing: border-box;
+}
+.operations-kds button,
+.operations-pos button,
+.operations-pos a,
+.operations-pos input,
+.operations-pos select {
+  font-family: inherit;
+}
+.operations-kds button:focus-visible,
+.operations-pos button:focus-visible,
+.operations-pos a:focus-visible,
+.operations-pos input:focus-visible,
+.operations-pos select:focus-visible,
+.operations-pos .scroll-panel-content:focus-visible {
+  outline: 3px solid var(--kds-action, #0066cc);
+  outline-offset: 2px;
+}
+.operations-kds button:disabled,
+.operations-pos button:disabled {
+  cursor: not-allowed;
+}
+
+.kds-toolbar {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 68px;
+  padding: 10px 14px;
+  border: 1px solid var(--kds-separator);
+  border-radius: 18px;
+  background: var(--kds-surface);
+}
+.kds-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 205px;
+}
+.kds-brand-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  color: var(--kds-on-action);
+  border-radius: 13px;
+  background: var(--kds-action);
+}
+.kds-brand h1 {
+  margin: 2px 0 0;
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--kds-text);
+}
+.kds-eyebrow {
+  margin: 0;
+  color: var(--kds-muted);
+  font-size: 12px;
+  line-height: 16px;
+}
+.kds-tabs {
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--kds-separator);
+  border-radius: 14px;
+  background: var(--kds-inset);
+}
+.kds-tabs button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 9px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--kds-muted);
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.kds-tabs button:hover {
+  background: var(--kds-surface);
+  color: var(--kds-text);
+}
+.kds-tabs button.is-selected {
+  color: var(--kds-text);
+  border-color: var(--kds-separator);
+  background: var(--kds-surface);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+.kds-tab-count {
+  min-width: 22px;
+  padding: 2px 5px;
+  border-radius: 8px;
+  color: var(--kds-text);
+  background: var(--kds-inset);
+  border: 1px solid var(--kds-separator);
+  text-align: center;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.kds-tabs button.is-selected .kds-tab-count {
+  background: var(--kds-selected);
+  color: var(--kds-action);
+  border-color: transparent;
+}
+.kds-fullscreen-button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 9px;
+  padding: 0 13px;
+  border: 1px solid var(--kds-control);
+  border-radius: 12px;
+  color: var(--kds-text);
+  background: var(--kds-surface);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.kds-fullscreen-button:hover {
+  background: var(--kds-inset);
+}
+
+.kds-metrics {
+  display: grid;
+  flex: 0 0 auto;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.kds-metric {
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  border: 1px solid var(--kds-separator);
+  border-radius: 15px;
+  background: var(--kds-surface);
+}
+.kds-metric span {
+  color: var(--kds-muted);
+  font-size: 14px;
+  line-height: 20px;
+}
+.kds-metric strong {
+  color: var(--kds-text);
+  font-size: 21px;
+  line-height: 27px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.kds-metric.is-overdue strong {
+  color: var(--kds-danger);
+}
+.kds-inline-status,
+.kds-inline-error {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 13px;
+  border: 1px solid var(--kds-control);
+  border-radius: 12px;
+  color: var(--kds-text);
+  background: var(--kds-inset);
+  font-size: 14px;
+  line-height: 20px;
+}
+.kds-inline-error {
+  border-color: var(--kds-danger);
+  color: var(--kds-danger);
+  background: var(--kds-danger-bg);
+}
+.kds-inline-error button {
+  min-height: 40px;
+  margin-left: auto;
+  padding: 0 12px;
+  border: 1px solid var(--kds-danger);
+  border-radius: 10px;
+  color: var(--kds-on-action);
+  background: var(--kds-danger);
+  font-weight: 650;
+  cursor: pointer;
+}
+.kds-new-tickets {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 12px;
+  border: 1px solid var(--kds-action);
+  border-radius: 12px;
+  color: var(--kds-action);
+  background: var(--kds-selected);
+  font-size: 14px;
+}
+.kds-new-tickets > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.kds-new-tickets button {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--kds-action);
+  border-radius: 10px;
+  color: var(--kds-on-action);
+  background: var(--kds-action);
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.kds-workspace {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: minmax(310px, 0.83fr) minmax(420px, 1.17fr);
+  gap: 12px;
+  min-height: 0;
+}
+.kds-workspace:has(> .kds-empty-state) {
+  display: flex;
+}
+.kds-empty-state {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  border: 1px solid var(--kds-separator);
+  border-radius: 18px;
+  color: var(--kds-muted);
+  background: var(--kds-surface);
+  text-align: center;
+}
+.kds-empty-state > svg {
+  color: var(--kds-action);
+}
+.kds-empty-state p {
+  margin: 0;
+  color: var(--kds-text);
+  font-size: 17px;
+  line-height: 24px;
+  font-weight: 600;
+}
+.kds-empty-state span {
+  font-size: 14px;
+  line-height: 20px;
+}
+.kds-empty-state button {
+  min-height: 44px;
+  margin-top: 8px;
+  padding: 0 15px;
+  border: 1px solid var(--kds-action);
+  border-radius: 11px;
+  color: var(--kds-on-action);
+  background: var(--kds-action);
+  font-weight: 650;
+}
+.kds-ticket-list,
+.kds-ticket-detail {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--kds-separator);
+  border-radius: 18px;
+  background: var(--kds-surface);
+}
+.kds-panel-heading {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 64px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--kds-separator);
+}
+.kds-panel-heading h2 {
+  margin: 0;
+  color: var(--kds-text);
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 650;
+}
+.kds-panel-heading span {
+  color: var(--kds-muted);
+  font-size: 13px;
+  line-height: 18px;
+}
+.kds-ticket-grid {
+  display: grid;
+  flex: 1 1 auto;
+  align-content: start;
+  gap: 8px;
+  min-height: 0;
+  padding: 12px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.kds-ticket-card {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--kds-separator);
+  border-radius: 13px;
+  color: var(--kds-text);
+  background: var(--kds-inset);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease;
+}
+.kds-ticket-card:hover {
+  background: var(--kds-surface);
+}
+.kds-ticket-card.is-selected {
+  border-color: var(--kds-action);
+  background: var(--kds-selected);
+}
+.kds-ticket-card.is-overdue {
+  border-left: 4px solid var(--kds-danger);
+}
+.kds-ticket-card-top,
+.kds-ticket-card-meta,
+.kds-ticket-card-summary {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.kds-ticket-card-top > strong {
+  color: var(--kds-text);
+  font-size: 20px;
+  line-height: 26px;
+  font-weight: 700;
+}
+.kds-ticket-card-meta {
+  color: var(--kds-muted);
+  font-size: 13px;
+  line-height: 18px;
+}
+.kds-ticket-card-meta > span:last-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-variant-numeric: tabular-nums;
+}
+.kds-ticket-card-meta .is-overdue-text {
+  color: var(--kds-danger);
+}
+.kds-ticket-card-summary {
+  justify-content: flex-start;
+  color: var(--kds-muted);
+  font-size: 13px;
+  line-height: 18px;
+}
+.kds-ticket-card-summary span:first-child {
+  flex: 0 0 auto;
+  padding-right: 8px;
+  border-right: 1px solid var(--kds-separator);
+  color: var(--kds-text);
+  font-weight: 650;
+}
+.kds-ticket-card-summary span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kds-status-chip {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  padding: 3px 9px;
+  border: 1px solid var(--kds-separator);
+  border-radius: 999px;
+  color: var(--kds-text);
+  background: var(--kds-inset);
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 650;
+}
+.kds-status-chip.pending {
+  border-color: var(--kds-warning);
+  color: var(--kds-warning);
+  background: var(--kds-warning-bg);
+}
+.kds-status-chip.preparing {
+  border-color: var(--kds-warning);
+  color: var(--kds-warning);
+  background: var(--kds-warning-bg);
+}
+.kds-status-chip.ready {
+  border-color: var(--kds-success);
+  color: var(--kds-success);
+  background: var(--kds-success-bg);
+}
+.kds-status-chip.delivered {
+  border-color: var(--kds-action);
+  color: var(--kds-action);
+  background: var(--kds-selected);
+}
+.operations-kds .page-controls {
+  display: flex;
+  flex: 0 0 auto;
+  min-height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 12px;
+  border-top: 1px solid var(--kds-separator);
+  color: var(--kds-text);
+}
+.operations-kds .page-range {
+  color: var(--kds-muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.operations-kds .page-controls-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.operations-kds .page-controls .icon-action {
+  display: grid;
+  min-width: 42px;
+  min-height: 40px;
+  place-items: center;
+  border: 1px solid var(--kds-control);
+  border-radius: 10px;
+  color: var(--kds-text);
+  background: var(--kds-surface);
+  cursor: pointer;
+}
+.operations-kds .page-controls .icon-action:disabled {
+  color: var(--kds-muted);
+  opacity: 0.6;
+}
+.operations-kds .page-select select {
+  min-height: 40px;
+  padding: 0 8px;
+  border: 1px solid var(--kds-control);
+  border-radius: 10px;
+  color: var(--kds-text);
+  background: var(--kds-surface);
+}
+.kds-detail-summary {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--kds-separator);
+  background: var(--kds-inset);
+}
+.kds-detail-summary.is-overdue {
+  box-shadow: inset 4px 0 var(--kds-danger);
+}
+.kds-detail-table {
+  display: grid;
+  gap: 3px;
+  color: var(--kds-muted);
+  font-size: 14px;
+  line-height: 20px;
+}
+.kds-detail-table-number {
+  color: var(--kds-text);
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.kds-detail-time {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--kds-muted);
+}
+.kds-detail-time strong {
+  color: var(--kds-text);
+  font-size: 20px;
+  line-height: 26px;
+  font-variant-numeric: tabular-nums;
+}
+.kds-detail-time span {
+  color: var(--kds-muted);
+  font-size: 13px;
+}
+.kds-detail-scroll {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+.operations-kds .kds-detail-scroll .scroll-panel-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.operations-kds .kds-detail-scroll .scroll-panel-content > div {
+  padding: 12px 16px;
+}
+.operations-kds .kds-detail-scroll .scroll-panel-controls {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 12px;
+  border-top: 1px solid var(--kds-separator);
+  color: var(--kds-muted);
+}
+.operations-kds .kds-detail-scroll .scroll-panel-controls button {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 9px;
+  border: 1px solid var(--kds-control);
+  border-radius: 10px;
+  color: var(--kds-text);
+  background: var(--kds-surface);
+}
+.operations-kds .kds-detail-scroll .scroll-panel-controls button:disabled {
+  opacity: 0.55;
+}
+.kds-detail-content {
+  display: grid;
+  gap: 12px;
+}
+.kds-order-note {
+  padding: 12px;
+  border: 1px solid var(--kds-warning);
+  border-radius: 13px;
+  color: var(--kds-warning);
+  background: var(--kds-warning-bg);
+}
+.kds-order-note h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  color: var(--kds-warning);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 650;
+}
+.kds-order-note p {
+  margin: 0;
+  color: var(--kds-text);
+  font-size: 16px;
+  line-height: 24px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+.kds-item-list {
+  display: grid;
+  gap: 4px;
+}
+.kds-item-row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 34px;
+  align-items: center;
+  gap: 11px;
+  min-height: 68px;
+  padding: 8px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--kds-separator);
+  color: var(--kds-text);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.kds-item-row:hover {
+  background: var(--kds-inset);
+}
+.kds-item-row:disabled {
+  opacity: 0.64;
+}
+.kds-item-quantity {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 12px;
+  color: var(--kds-action);
+  background: var(--kds-selected);
+  font-size: 21px;
+  line-height: 26px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.kds-item-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.kds-item-copy > strong {
+  color: var(--kds-text);
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+.kds-item-note {
+  color: var(--kds-warning);
+  font-size: 16px;
+  line-height: 24px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+.kds-item-note b {
+  color: var(--kds-warning);
+  font-weight: 650;
+}
+.kds-item-row.is-ready .kds-item-copy > strong {
+  color: var(--kds-muted);
+  text-decoration: line-through;
+}
+.kds-item-check {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid var(--kds-control);
+  border-radius: 10px;
+  color: transparent;
+  background: var(--kds-surface);
+}
+.kds-item-check.is-ready {
+  border-color: var(--kds-success);
+  color: var(--kds-on-action);
+  background: var(--kds-success);
+}
+.kds-no-items {
+  color: var(--kds-muted);
+  font-size: 15px;
+}
+.kds-ticket-actions {
+  display: grid;
+  flex: 0 0 auto;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--kds-separator);
+  background: var(--kds-surface);
+}
+.kds-ticket-actions > button {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: 13px;
+  font-size: 15px;
+  line-height: 21px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.kds-primary-action {
+  color: var(--kds-on-action);
+  border-color: var(--kds-action) !important;
+  background: var(--kds-action);
+}
+.kds-primary-action:hover {
+  opacity: 0.9;
+}
+.kds-ready-action {
+  color: var(--kds-on-action);
+  border-color: var(--kds-success) !important;
+  background: var(--kds-success);
+}
+.kds-ready-action:hover {
+  opacity: 0.9;
+}
+.kds-delivered-action {
+  color: var(--kds-action);
+  border-color: var(--kds-action) !important;
+  background: var(--kds-selected);
+}
+.kds-delivered-action:hover {
+  opacity: 0.9;
+}
+.kds-ready-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--kds-success);
+  border-radius: 12px;
+  color: var(--kds-success);
+  background: var(--kds-success-bg);
+  font-size: 14px;
+  line-height: 20px;
+}
+.kds-empty-detail {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 22px;
+  color: var(--kds-muted);
+  text-align: center;
+}
+.kds-empty-detail svg {
+  color: var(--kds-action);
+}
+.kds-empty-detail p {
+  margin: 0;
+  color: var(--kds-text);
+  font-size: 15px;
+  line-height: 22px;
+}
+.kds-mobile-back {
+  display: none;
+}
+
+/* Cashier: table context stays beside an account ledger and payment controls on desktop. */
+.operations-pos {
+  --pos-canvas: #f5f5f7;
+  --pos-surface: #ffffff;
+  --pos-inset: #ededf2;
+  --pos-text: #1d1d1f;
+  --pos-muted: #626269;
+  --pos-action: #0066cc;
+  --pos-on-action: #ffffff;
+  --pos-selected: #eaf2ff;
+  --pos-separator: #e3e3e8;
+  --pos-control: #85858c;
+  --pos-success: #176c46;
+  --pos-success-bg: #eaf7ef;
+  --pos-warning: #9b4a00;
+  --pos-warning-bg: #fff3df;
+  --pos-danger: #b42318;
+  --pos-danger-bg: #fff0ed;
+  display: flex;
+  width: 100%;
+  height: calc(100dvh - var(--header-height, 64px));
+  min-height: 0;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+  padding: 12px 16px 16px;
+  color: var(--pos-text);
+  background: var(--pos-canvas);
+  color-scheme: light;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+.pos-command-bar {
+  display: grid;
+  flex: 0 0 auto;
+  grid-template-columns: minmax(180px, 0.8fr) minmax(180px, 0.75fr) minmax(340px, 1.5fr) auto;
+  align-items: center;
+  gap: 14px;
+  min-height: 76px;
+  padding: 11px 14px;
+  border: 1px solid #d5d5dc;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.95);
+}
+.pos-command-brand {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 11px;
+}
+.pos-command-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 13px;
+  color: #fff;
+  background: #0066cc;
+}
+.pos-command-brand > div > span {
+  display: block;
+  color: #626269;
+  font-size: 11px;
+  line-height: 15px;
+}
+.pos-command-brand h1 {
+  margin: 2px 0 0;
+  color: #1d1d1f;
+  font-size: 19px;
+  line-height: 25px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+.pos-section-picker {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+.pos-section-picker > span {
+  color: #626269;
+  font-size: 12px;
+  line-height: 16px;
+}
+.pos-section-picker select {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 34px 0 11px;
+  border: 1px solid #85858c;
+  border-radius: 11px;
+  color: #1d1d1f;
+  background: #fff;
+  font-size: 14px;
+}
+.pos-command-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.pos-shift-status {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  border: 1px solid #a9a9b0;
+  border-radius: 11px;
+  color: #1d1d1f;
+  background: #ededf2;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.pos-shift-status.is-open {
+  border-color: #7cae91;
+  color: #176c46;
+  background: #eaf7ef;
+}
+.pos-shift-status.is-closed {
+  color: #626269;
+}
+.pos-command-button,
+.pos-command-link {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  border: 1px solid #0066cc;
+  border-radius: 11px;
+  color: #fff;
+  background: #0066cc;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 650;
+  text-decoration: none;
+  cursor: pointer;
+}
+.pos-command-button:hover,
+.pos-command-link:hover {
+  background: #005bb8;
+}
+.pos-command-link {
+  border-color: #85858c;
+  color: #1d1d1f;
+  background: #fff;
+}
+.pos-command-link:hover {
+  color: #005bb8;
+  background: #f4f8ff;
+}
+.pos-command-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  color: #626269;
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+.pos-command-summary strong {
+  color: #1d1d1f;
+  font-variant-numeric: tabular-nums;
+}
+.pos-bill-request-count {
+  padding: 2px 7px;
+  border-radius: 8px;
+  color: #7a3e00;
+  background: #fff3df;
+}
+.pos-mobile-switch {
+  display: none;
+}
+.pos-main {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: clamp(280px, 25vw, 360px) minmax(0, 1fr);
+  gap: 12px;
+  min-height: 0;
+}
+.pos-table-selector,
+.pos-checkout-panel {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid #d5d5dc;
+  border-radius: 18px;
+  background: #fff;
+}
+.pos-table-selector {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+}
+.pos-section-heading {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 4px 12px;
+}
+.pos-section-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pos-table-view-toggle {
+  display: none;
+  align-items: center;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid #d5d5dc;
+  border-radius: 10px;
+  background: #ededf2;
+}
+.pos-table-view-toggle button {
+  min-height: 36px;
+  padding: 0 9px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #626269;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pos-table-view-toggle button[aria-pressed="true"] {
+  border-color: #d5d5dc;
+  color: #1d1d1f;
+  background: #fff;
+}
+.pos-section-heading h2 {
+  margin: 0;
+  color: #1d1d1f;
+  font-size: 19px;
+  line-height: 25px;
+  font-weight: 650;
+}
+.pos-section-heading span {
+  color: #626269;
+  font-size: 13px;
+  line-height: 18px;
+}
+.pos-section-heading > div > span {
+  display: block;
+  margin-top: 2px;
+}
+.pos-section-table-count {
+  padding: 4px 8px;
+  border-radius: 8px;
+  color: #626269;
+  background: #ededf2;
+  white-space: nowrap;
+}
+.pos-mobile-table-list {
+  display: block;
+  min-height: 0;
+}
+.pos-table-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.pos-table-card {
+  display: grid;
+  min-width: 0;
+  min-height: 70px;
+  align-content: center;
+  justify-items: start;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid #85858c;
+  border-radius: 12px;
+  color: #1d1d1f;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+.pos-table-card strong {
+  max-width: 100%;
+  overflow: hidden;
+  color: #1d1d1f;
+  font-size: 17px;
+  line-height: 22px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pos-table-card.is-selected {
+  border: 2px solid #0066cc;
+  padding: 7px;
+  background: #eaf2ff;
+}
+.pos-table-card-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #626269;
+  font-size: 11px;
+  line-height: 15px;
+}
+.pos-table-card-status i {
+  width: 8px;
+  height: 8px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  background: transparent;
+}
+.pos-table-card.available .pos-table-card-status {
+  color: #176c46;
+}
+.pos-table-card.available .pos-table-card-status i {
+  background: #176c46;
+}
+.pos-table-card.occupied .pos-table-card-status {
+  color: #626269;
+}
+.pos-table-card.occupied .pos-table-card-status i {
+  background: #626269;
+}
+.pos-table-card.bill-requested {
+  border-color: #9b4a00;
+  background: #fff8ee;
+}
+.pos-table-card.bill-requested .pos-table-card-status {
+  color: #9b4a00;
+}
+.pos-table-card.bill-requested .pos-table-card-status i {
+  background: #9b4a00;
+}
+.pos-table-open-count {
+  color: #626269;
+  font-size: 10px;
+  line-height: 14px;
+}
+.pos-list-state {
+  display: flex;
+  min-height: 120px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 18px;
+  color: #626269;
+  font-size: 14px;
+  text-align: center;
+}
+.pos-list-state.is-error {
+  color: #b42318;
+}
+.pos-floorplan-panel {
+  display: none;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+.pos-table-selector .page-controls {
+  margin-top: 9px;
+}
+.operations-pos .page-controls {
+  display: flex;
+  min-height: 50px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 2px;
+  color: #1d1d1f;
+}
+.operations-pos .page-range {
+  color: #626269;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.operations-pos .page-controls-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.operations-pos .page-controls .icon-action {
+  display: grid;
+  min-width: 42px;
+  min-height: 40px;
+  place-items: center;
+  border: 1px solid #85858c;
+  border-radius: 10px;
+  color: #1d1d1f;
+  background: #fff;
+  cursor: pointer;
+}
+.operations-pos .page-controls .icon-action:disabled {
+  color: #626269;
+  opacity: 0.58;
+}
+.operations-pos .page-select select {
+  min-height: 40px;
+  padding: 0 8px;
+  border: 1px solid #85858c;
+  border-radius: 10px;
+  color: #1d1d1f;
+  background: #fff;
+}
+
+.pos-checkout-panel {
+  display: flex;
+  flex-direction: column;
+  padding: 14px;
+}
+.pos-checkout-header {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 57px;
+  padding-bottom: 11px;
+  border-bottom: 1px solid #e3e3e8;
+}
+.pos-checkout-context {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 11px;
+}
+.pos-checkout-table-mark {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 12px;
+  color: #005bb8;
+  background: #eaf2ff;
+}
+.pos-checkout-heading-line {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+.pos-checkout-heading-line h2 {
+  margin: 0;
+  color: #1d1d1f;
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 700;
+}
+.pos-checkout-section {
+  max-width: 180px;
+  overflow: hidden;
+  padding: 4px 8px;
+  border-radius: 8px;
+  color: #626269;
+  background: #ededf2;
+  font-size: 12px;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pos-checkout-context p {
+  margin: 1px 0 0;
+  color: #626269;
+  font-size: 13px;
+  line-height: 18px;
+}
+.pos-checkout-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pos-back-to-tables,
+.pos-add-item-button,
+.pos-close-account {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 11px;
+  border: 1px solid #85858c;
+  border-radius: 11px;
+  color: #1d1d1f;
+  background: #fff;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pos-back-to-tables:hover,
+.pos-close-account:hover {
+  background: #ededf2;
+}
+.pos-add-item-button {
+  border-color: #0066cc;
+  color: #005bb8;
+  background: #f4f8ff;
+}
+.pos-add-item-button:hover {
+  background: #eaf2ff;
+}
+.pos-close-account {
+  width: 44px;
+  padding: 0;
+}
+.pos-checkout-layout {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+.pos-ledger {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 110px;
+  flex-direction: column;
+}
+.pos-ledger-heading {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 45px;
+  padding: 0 2px;
+}
+.pos-ledger-heading h3 {
+  margin: 0;
+  color: #1d1d1f;
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 650;
+}
+.pos-ledger-heading span {
+  color: #626269;
+  font-size: 12px;
+  line-height: 17px;
+}
+.pos-item-scroll {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  flex-direction: column;
+}
+.operations-pos .pos-item-scroll .scroll-panel-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.operations-pos .pos-item-scroll .scroll-panel-content > div {
+  padding-right: 6px;
+}
+.pos-item-list {
+  display: grid;
+}
+.pos-item-line {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) minmax(82px, auto) 44px;
+  align-items: center;
+  gap: 8px;
+  min-height: 58px;
+  padding: 6px 4px;
+  border-bottom: 1px solid #e3e3e8;
+}
+.pos-item-quantity {
+  color: #005bb8;
+  font-size: 15px;
+  line-height: 21px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.pos-item-description {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+.pos-item-description strong {
+  color: #1d1d1f;
+  font-size: 15px;
+  line-height: 21px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.pos-item-description p {
+  margin: 0;
+  color: #626269;
+  font-size: 13px;
+  line-height: 19px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+.pos-item-line-total {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: #1d1d1f;
+  text-align: right;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.pos-remove-item {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  color: #626269;
+  background: transparent;
+  cursor: pointer;
+}
+.pos-remove-item:hover {
+  border-color: #e7a59e;
+  color: #b42318;
+  background: #fff0ed;
+}
+.operations-pos .pos-item-scroll .scroll-panel-controls {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 0;
+  border-top: 1px solid #e3e3e8;
+  color: #626269;
+  font-size: 12px;
+}
+.operations-pos .pos-item-scroll .scroll-panel-controls button {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 5px;
+  padding: 0 8px;
+  border: 1px solid #85858c;
+  border-radius: 10px;
+  color: #1d1d1f;
+  background: #fff;
+}
+.operations-pos .pos-item-scroll .scroll-panel-controls button:disabled {
+  opacity: 0.55;
+}
+.pos-empty-ledger {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 120px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  color: #626269;
+  text-align: center;
+}
+.pos-empty-ledger p {
+  margin: 0;
+  font-size: 14px;
+}
+.pos-empty-ledger button,
+.pos-add-first-item {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 13px;
+  border: 1px solid #85858c;
+  border-radius: 11px;
+  color: #1d1d1f;
+  background: #ededf2;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pos-action-error,
+.pos-payment-error,
+.pos-dialog-error {
+  margin: 8px 0 0;
+  padding: 9px 11px;
+  border: 1px solid #d99a94;
+  border-radius: 11px;
+  color: #8d2018;
+  background: #fff0ed;
+  font-size: 13px;
+  line-height: 19px;
+}
+.pos-payment-panel {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 0 0;
+  border-top: 1px solid #e3e3e8;
+}
+.pos-payment-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.pos-payment-heading > div > span {
+  display: block;
+  color: #626269;
+  font-size: 12px;
+  line-height: 16px;
+}
+.pos-payment-heading h3 {
+  margin: 1px 0 0;
+  color: #1d1d1f;
+  font-size: 19px;
+  line-height: 24px;
+  font-weight: 650;
+}
+.pos-preview-button {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  border: 1px solid #85858c;
+  border-radius: 10px;
+  color: #1d1d1f;
+  background: #fff;
+  font-size: 12px;
+  line-height: 17px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pos-preview-button:hover:not(:disabled) {
+  background: #ededf2;
+}
+.pos-preview-button:disabled {
+  opacity: 0.55;
+}
+.pos-payment-breakdown {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding: 9px 11px;
+  border: 1px solid #e3e3e8;
+  border-radius: 13px;
+  background: #f5f5f7;
+}
+.pos-payment-breakdown > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: #626269;
+  font-size: 13px;
+  line-height: 18px;
+}
+.pos-payment-breakdown dt,
+.pos-payment-breakdown dd {
+  margin: 0;
+}
+.pos-payment-breakdown dd {
+  color: #1d1d1f;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.pos-payment-breakdown .pos-remaining-row {
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid #c4c4cc;
+  color: #1d1d1f;
+  font-size: 15px;
+  line-height: 21px;
+  font-weight: 650;
+}
+.pos-payment-breakdown .pos-remaining-row dd {
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 700;
+}
+.pos-discount-presets {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pos-discount-presets button {
+  min-width: 48px;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid #85858c;
+  border-radius: 10px;
+  color: #1d1d1f;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pos-discount-presets button.is-selected {
+  border-color: #0066cc;
+  color: #005bb8;
+  background: #eaf2ff;
+}
+.pos-discount-presets > span {
+  margin-left: 3px;
+  color: #626269;
+  font-size: 12px;
+}
+.pos-discount-fields {
+  display: grid;
+  grid-template-columns: minmax(82px, 0.45fr) minmax(0, 1fr);
+  gap: 8px;
+}
+.pos-discount-fields label,
+.pos-partial-field {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  color: #1d1d1f;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+}
+.pos-discount-fields input,
+.pos-partial-field input,
+.pos-shift-cash-field input {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid #85858c;
+  border-radius: 10px;
+  color: #1d1d1f;
+  background: #fff;
+  font-size: 14px;
+  line-height: 20px;
+}
+.pos-discount-fields input:disabled {
+  color: #626269;
+  background: #ededf2;
+  opacity: 1;
+}
+.pos-partial-field small {
+  color: #626269;
+  font-size: 12px;
+  line-height: 17px;
+  font-weight: 400;
+}
+.pos-shift-required {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid #e1bd91;
+  border-radius: 10px;
+  color: #7a3e00;
+  background: #fff3df;
+  font-size: 13px;
+  line-height: 19px;
+}
+.pos-payment-methods {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.pos-payment-methods button {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 6px 8px;
+  border: 1px solid #0066cc;
+  border-radius: 12px;
+  color: #fff;
+  background: #0066cc;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.pos-payment-methods button:hover:not(:disabled) {
+  background: #005bb8;
+}
+.pos-payment-methods .pos-method-card {
+  border-color: #176c46;
+  color: #fff;
+  background: #176c46;
+}
+.pos-payment-methods .pos-method-card:hover:not(:disabled) {
+  background: #12583a;
+}
+.pos-payment-methods .pos-method-other {
+  border-color: #85858c;
+  color: #1d1d1f;
+  background: #fff;
+}
+.pos-payment-methods .pos-method-other:hover:not(:disabled) {
+  background: #ededf2;
+}
+.pos-payment-methods button:disabled {
+  opacity: 0.55;
+}
+.pos-payment-pending {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #626269;
+  font-size: 13px;
+}
+.pos-add-first-item {
+  width: 100%;
+  min-height: 48px;
+}
+.pos-no-selection {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  color: #626269;
+  text-align: center;
+}
+.pos-no-selection > svg {
+  color: #0066cc;
+}
+.pos-no-selection h2 {
+  margin: 0;
+  color: #1d1d1f;
+  font-size: 19px;
+  line-height: 25px;
+}
+.pos-no-selection p {
+  max-width: 340px;
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+/* Shared dialog styling stays scoped to the cashier's native modal surfaces. */
+.operations-pos .workspace-dialog {
+  width: min(560px, calc(100vw - 32px));
+  max-width: none;
+  max-height: min(90dvh, 820px);
+  padding: 0;
+  overflow: auto;
+  border: 1px solid #d5d5dc;
+  border-radius: 22px;
+  color: #1d1d1f;
+  background: #fff;
+  box-shadow: 0 22px 70px rgba(16, 24, 40, 0.22);
+}
+.operations-pos .workspace-dialog::backdrop {
+  background: rgba(15, 18, 24, 0.48);
+}
+.operations-pos .workspace-dialog .dialog-heading {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  min-height: 62px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  border-bottom: 1px solid #e3e3e8;
+  background: #fff;
+}
+.operations-pos .workspace-dialog .dialog-heading h2 {
+  margin: 0;
+  color: #1d1d1f;
+  font-size: 19px;
+  line-height: 25px;
+  font-weight: 650;
+}
+.operations-pos .workspace-dialog .dialog-heading .icon-action {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid #85858c;
+  border-radius: 11px;
+  color: #1d1d1f;
+  background: #fff;
+}
+.operations-pos .workspace-dialog .dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 18px 18px;
+}
+.pos-dialog-description {
+  margin: 0;
+  color: #626269;
+  font-size: 15px;
+  line-height: 22px;
+}
+.pos-menu-dialog {
+  width: min(640px, calc(100vw - 32px)) !important;
+}
+.pos-menu-search {
+  display: grid;
+  gap: 6px;
+  color: #1d1d1f;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+}
+.pos-menu-search-control {
+  display: flex;
+  min-height: 46px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 11px;
+  border: 1px solid #85858c;
+  border-radius: 12px;
+  color: #626269;
+  background: #fff;
+}
+.pos-menu-search-control input {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  border: 0;
+  outline: 0;
+  color: #1d1d1f;
+  background: transparent;
+  font-size: 15px;
+}
+.pos-menu-results {
+  display: grid;
+  max-height: min(50dvh, 450px);
+  gap: 5px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.pos-menu-result {
+  display: flex;
+  min-height: 58px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 1px solid #e3e3e8;
+  border-radius: 12px;
+  color: #1d1d1f;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+.pos-menu-result:hover:not(:disabled) {
+  border-color: #0066cc;
+  background: #f4f8ff;
+}
+.pos-menu-result > span:first-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.pos-menu-result strong {
+  color: #1d1d1f;
+  font-size: 15px;
+  line-height: 21px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.pos-menu-result small {
+  color: #626269;
+  font-size: 12px;
+  line-height: 16px;
+}
+.pos-menu-result-price {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 9px;
+  color: #1d1d1f;
+  font-size: 14px;
+  line-height: 19px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.pos-menu-result-price svg {
+  color: #0066cc;
+}
+.pos-menu-empty {
+  margin: 0;
+  padding: 22px;
+  color: #626269;
+  text-align: center;
+}
+.operations-pos .pos-menu-dialog .page-controls {
+  padding-top: 9px;
+  border-top: 1px solid #e3e3e8;
+}
+.pos-shift-cash-field {
+  display: grid;
+  gap: 7px;
+  color: #1d1d1f;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+}
+.pos-shift-cash-field input {
+  min-height: 48px;
+  font-size: 16px;
+}
+.pos-dialog-primary,
+.pos-dialog-secondary,
+.pos-dialog-destructive {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+  border: 1px solid #0066cc;
+  border-radius: 12px;
+  color: #fff;
+  background: #0066cc;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.pos-dialog-primary:hover:not(:disabled) {
+  background: #005bb8;
+}
+.pos-dialog-primary:disabled {
+  opacity: 0.6;
+}
+.pos-dialog-secondary {
+  border-color: #85858c;
+  color: #1d1d1f;
+  background: #fff;
+}
+.pos-dialog-secondary:hover {
+  background: #ededf2;
+}
+.pos-dialog-destructive {
+  border-color: #b42318;
+  color: #fff;
+  background: #b42318;
+}
+.pos-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.pos-shift-summary {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+}
+.pos-shift-summary > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  color: #626269;
+  font-size: 14px;
+  line-height: 20px;
+}
+.pos-shift-summary dt,
+.pos-shift-summary dd {
+  margin: 0;
+}
+.pos-shift-summary dd {
+  color: #1d1d1f;
+  font-weight: 600;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.pos-shift-summary .is-total {
+  margin-top: 5px;
+  padding-top: 10px;
+  border-top: 1px solid #e3e3e8;
+  color: #1d1d1f;
+  font-weight: 650;
+}
+
+/* Receipt: browser printing and the connected printer keep separate outcomes. */
+.operations-pos .receipt-dialog {
+  width: min(520px, calc(100vw - 32px));
+}
+.operations-pos .receipt-dialog .dialog-content {
+  gap: 12px;
+}
+.receipt-paper {
+  display: grid;
+  gap: 11px;
+  padding: 16px;
+  border: 1px solid #d5d5dc;
+  border-radius: 14px;
+  color: #1d1d1f;
+  background: #fff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 19px;
+}
+.receipt-paper-header {
+  display: grid;
+  gap: 2px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid #1d1d1f;
+  text-align: center;
+}
+.receipt-paper,
+.receipt-paper-items,
+.receipt-paper-totals {
+  min-width: 0;
+  max-width: 100%;
+}
+.receipt-paper-header h3,
+.receipt-paper-header p {
+  margin: 0;
+}
+.receipt-paper-header h3 {
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+.receipt-paper-header p {
+  color: #626269;
+}
+.receipt-paper-header time {
+  color: #626269;
+  font-size: 11px;
+  line-height: 16px;
+}
+.receipt-paper-context,
+.receipt-paper-items > div,
+.receipt-paper-totals > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 3px 12px;
+  min-width: 0;
+}
+.receipt-paper-context {
+  padding: 0 0 8px;
+  border-bottom: 1px dashed #626269;
+  font-weight: 650;
+}
+.receipt-paper-context span:first-child {
+  overflow-wrap: anywhere;
+}
+.receipt-paper-items {
+  display: grid;
+  gap: 5px;
+  max-height: 30dvh;
+  overflow: auto;
+  padding: 0 0 9px;
+  border-bottom: 1px dashed #626269;
+}
+.receipt-paper-items > div {
+  align-items: flex-start;
+}
+.receipt-paper-items span {
+  flex: 1 1 120px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.receipt-paper-items strong {
+  flex: 0 0 auto;
+  max-width: 100%;
+  margin-left: auto;
+  overflow-wrap: anywhere;
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.receipt-paper-totals {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+}
+.receipt-paper-totals dt,
+.receipt-paper-totals dd {
+  margin: 0;
+}
+.receipt-paper-totals dd {
+  max-width: 100%;
+  margin-left: auto;
+  overflow-wrap: anywhere;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.receipt-paper-totals .is-paid,
+.receipt-paper-totals .is-total {
+  padding-top: 4px;
+  color: #1d1d1f;
+  font-size: 14px;
+  font-weight: 800;
+}
+.receipt-paper-footer {
+  padding-top: 8px;
+  border-top: 1px solid #1d1d1f;
+  color: #626269;
+  text-align: center;
+}
+.receipt-manual-note {
+  margin: 0;
+  padding: 10px 11px;
+  border: 1px solid #8ca6c0;
+  border-radius: 11px;
+  color: #174c7c;
+  background: #eff6ff;
+  font-size: 13px;
+  line-height: 19px;
+}
+.receipt-print-status {
+  min-height: 0;
+}
+.receipt-print-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 11px;
+  border: 1px solid #85858c;
+  border-radius: 11px;
+  color: #1d1d1f;
+  background: #ededf2;
+  font-size: 13px;
+  line-height: 19px;
+}
+.receipt-print-message svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+.receipt-print-message.pending {
+  color: #1d1d1f;
+}
+.receipt-print-message.success {
+  border-color: #7cae91;
+  color: #145a39;
+  background: #eaf7ef;
+}
+.receipt-print-message.error {
+  border-color: #d99a94;
+  color: #8d2018;
+  background: #fff0ed;
+}
+.receipt-print-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+}
+.receipt-print-actions button {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 5px 8px;
+  border: 1px solid #85858c;
+  border-radius: 11px;
+  color: #1d1d1f;
+  background: #fff;
+  font-size: 12px;
+  line-height: 17px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.receipt-print-actions button:hover:not(:disabled) {
+  background: #ededf2;
+}
+.receipt-print-actions .receipt-server-print {
+  border-color: #0066cc;
+  color: #fff;
+  background: #0066cc;
+}
+.receipt-print-actions .receipt-server-print:hover:not(:disabled) {
+  background: #005bb8;
+}
+.receipt-print-actions button:disabled {
+  opacity: 0.58;
+}
+.receipt-close-button {
+  min-height: 44px;
+  border: 0;
+  color: #626269;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* POS inherits the app theme explicitly because its base palette is intentionally
+   kept light for receipts and printed workflows. */
+html[data-theme="dark"] .operations-pos {
+  --pos-canvas: #17181c;
+  --pos-surface: #232429;
+  --pos-inset: #1c1d22;
+  --pos-text: #f5f5f7;
+  --pos-muted: #b7b8c2;
+  --pos-action: #8cc2ff;
+  --pos-on-action: #0a2342;
+  --pos-selected: #203b5b;
+  --pos-separator: #41434d;
+  --pos-control: #888b97;
+  --pos-success: #84dda5;
+  --pos-success-bg: #163225;
+  --pos-warning: #ffd28a;
+  --pos-warning-bg: #3a2c19;
+  --pos-danger: #ffb4aa;
+  --pos-danger-bg: #422723;
+  color: var(--pos-text);
+  background: var(--pos-canvas);
+  color-scheme: dark;
+}
+
+html[data-theme="dark"] .operations-pos .pos-command-bar,
+html[data-theme="dark"] .operations-pos .pos-table-selector,
+html[data-theme="dark"] .operations-pos .pos-checkout-panel,
+html[data-theme="dark"] .operations-pos .pos-table-card,
+html[data-theme="dark"] .operations-pos .pos-back-to-tables,
+html[data-theme="dark"] .operations-pos .pos-close-account,
+html[data-theme="dark"] .operations-pos .pos-preview-button,
+html[data-theme="dark"] .operations-pos .pos-discount-presets button,
+html[data-theme="dark"] .operations-pos .pos-payment-methods .pos-method-other,
+html[data-theme="dark"] .operations-pos .page-controls .icon-action,
+html[data-theme="dark"] .operations-pos .page-select select,
+html[data-theme="dark"] .operations-pos .pos-item-scroll .scroll-panel-controls button,
+html[data-theme="dark"] .operations-pos .workspace-dialog,
+html[data-theme="dark"] .operations-pos .workspace-dialog .dialog-heading,
+html[data-theme="dark"] .operations-pos .workspace-dialog .dialog-heading .icon-action,
+html[data-theme="dark"] .operations-pos .pos-menu-search-control,
+html[data-theme="dark"] .operations-pos .pos-menu-result,
+html[data-theme="dark"] .operations-pos .pos-dialog-secondary,
+html[data-theme="dark"] .operations-pos .receipt-paper,
+html[data-theme="dark"] .operations-pos .receipt-print-actions button {
+  border-color: var(--pos-separator);
+  color: var(--pos-text);
+  background: var(--pos-surface);
+}
+
+html[data-theme="dark"] .operations-pos .pos-command-bar {
+  background: var(--pos-surface);
+}
+html[data-theme="dark"] .operations-pos .pos-command-icon,
+html[data-theme="dark"] .operations-pos .pos-command-button,
+html[data-theme="dark"] .operations-pos .pos-payment-methods button,
+html[data-theme="dark"] .operations-pos .pos-dialog-primary {
+  border-color: var(--pos-action);
+  color: var(--pos-on-action);
+  background: var(--pos-action);
+}
+html[data-theme="dark"] .operations-pos .pos-command-button:hover,
+html[data-theme="dark"] .operations-pos .pos-payment-methods button:hover:not(:disabled),
+html[data-theme="dark"] .operations-pos .pos-dialog-primary:hover:not(:disabled) {
+  background: #add3ff;
+}
+
+html[data-theme="dark"] .operations-pos .pos-section-picker select,
+html[data-theme="dark"] .operations-pos .pos-discount-fields input,
+html[data-theme="dark"] .operations-pos .pos-partial-field input,
+html[data-theme="dark"] .operations-pos .pos-shift-cash-field input {
+  border-color: var(--pos-control);
+  color: var(--pos-text);
+  background: var(--pos-inset);
+}
+html[data-theme="dark"] .operations-pos .pos-discount-fields input:disabled {
+  color: var(--pos-muted);
+  background: var(--pos-surface);
+}
+
+html[data-theme="dark"] .operations-pos .pos-shift-status,
+html[data-theme="dark"] .operations-pos .pos-table-view-toggle,
+html[data-theme="dark"] .operations-pos .pos-section-table-count,
+html[data-theme="dark"] .operations-pos .pos-checkout-section,
+html[data-theme="dark"] .operations-pos .pos-empty-ledger button,
+html[data-theme="dark"] .operations-pos .pos-add-first-item,
+html[data-theme="dark"] .operations-pos .receipt-print-message {
+  border-color: var(--pos-separator);
+  color: var(--pos-muted);
+  background: var(--pos-inset);
+}
+html[data-theme="dark"] .operations-pos .pos-payment-breakdown {
+  border-color: var(--pos-separator);
+  color: var(--pos-text);
+  background: var(--pos-inset);
+}
+html[data-theme="dark"] .operations-pos .pos-payment-breakdown dt {
+  color: var(--pos-muted);
+}
+html[data-theme="dark"] .operations-pos .pos-payment-breakdown dd {
+  color: var(--pos-text);
+}
+html[data-theme="dark"] .operations-pos .pos-payment-breakdown .pos-remaining-row {
+  border-top-color: var(--pos-separator);
+  color: var(--pos-text);
+}
+html[data-theme="dark"] .operations-pos .pos-payment-breakdown .pos-remaining-row dd {
+  color: var(--pos-action);
+}
+
+html[data-theme="dark"] .operations-pos .pos-table-card.available {
+  border-color: #365e43;
+  color: var(--pos-text);
+  background: rgba(22, 50, 37, 0.5);
+}
+html[data-theme="dark"] .operations-pos .pos-table-card.available .pos-table-card-status {
+  color: #84dda5;
+}
+html[data-theme="dark"] .operations-pos .pos-table-card.available .pos-table-card-status i {
+  background: #84dda5;
+  border-color: #84dda5;
+}
+
+html[data-theme="dark"] .operations-pos .pos-table-card.occupied {
+  border-color: #5a3330;
+  color: var(--pos-text);
+  background: rgba(66, 39, 35, 0.45);
+}
+html[data-theme="dark"] .operations-pos .pos-table-card.occupied .pos-table-card-status {
+  color: #ffb4aa;
+}
+html[data-theme="dark"] .operations-pos .pos-table-card.occupied .pos-table-card-status i {
+  background: #ffb4aa;
+  border-color: #ffb4aa;
+}
+html[data-theme="dark"] .operations-pos .pos-table-card.occupied .pos-table-open-count {
+  color: #e5b0aa;
+}
+
+html[data-theme="dark"] .operations-pos .pos-table-card.bill-requested {
+  border-color: #9f7b42;
+  color: var(--pos-warning);
+  background: rgba(58, 44, 25, 0.65);
+}
+html[data-theme="dark"] .operations-pos .pos-table-card.bill-requested strong {
+  color: var(--pos-warning);
+}
+html[data-theme="dark"] .operations-pos .pos-table-card.bill-requested .pos-table-card-status {
+  color: var(--pos-warning);
+}
+html[data-theme="dark"] .operations-pos .pos-table-card.bill-requested .pos-table-card-status i {
+  background: var(--pos-warning);
+  border-color: var(--pos-warning);
+}
+html[data-theme="dark"] .operations-pos .pos-table-card.bill-requested .pos-table-open-count {
+  color: var(--pos-warning);
+}
+
+html[data-theme="dark"] .operations-pos .pos-table-card.is-selected {
+  border-color: var(--pos-action) !important;
+  color: var(--pos-action) !important;
+  background: var(--pos-selected) !important;
+}
+html[data-theme="dark"] .operations-pos .pos-table-card.is-selected strong {
+  color: #ffffff !important;
+}
+html[data-theme="dark"] .operations-pos .pos-table-card.is-selected .pos-table-card-status {
+  color: #add3ff !important;
+}
+html[data-theme="dark"] .operations-pos .pos-table-card.is-selected .pos-table-card-status i {
+  background: #add3ff !important;
+  border-color: #add3ff !important;
+}
+
+html[data-theme="dark"] .operations-pos .pos-shift-status.is-open,
+html[data-theme="dark"] .operations-pos .pos-payment-methods .pos-method-card,
+html[data-theme="dark"] .operations-pos .receipt-print-message.success {
+  border-color: #4e9569;
+  color: var(--pos-success);
+  background: var(--pos-success-bg);
+}
+html[data-theme="dark"] .operations-pos .pos-checkout-table-mark,
+html[data-theme="dark"] .operations-pos .pos-add-item-button,
+html[data-theme="dark"] .operations-pos .pos-discount-presets button.is-selected,
+html[data-theme="dark"] .operations-pos .pos-mobile-switch button.is-selected,
+html[data-theme="dark"] .operations-pos .pos-menu-result:hover:not(:disabled) {
+  border-color: var(--pos-action);
+  color: var(--pos-action);
+  background: var(--pos-selected);
+}
+html[data-theme="dark"] .operations-pos .pos-shift-required {
+  border-color: #9f7b42;
+  color: var(--pos-warning);
+  background: var(--pos-warning-bg);
+}
+html[data-theme="dark"] .operations-pos .pos-action-error,
+html[data-theme="dark"] .operations-pos .pos-payment-error,
+html[data-theme="dark"] .operations-pos .pos-dialog-error,
+html[data-theme="dark"] .operations-pos .receipt-print-message.error {
+  border-color: #b7776e;
+  color: var(--pos-danger);
+  background: var(--pos-danger-bg);
+}
+
+html[data-theme="dark"] .operations-pos .pos-command-brand > div > span,
+html[data-theme="dark"] .operations-pos .pos-section-picker > span,
+html[data-theme="dark"] .operations-pos .pos-command-summary,
+html[data-theme="dark"] .operations-pos .pos-table-view-toggle button,
+html[data-theme="dark"] .operations-pos .pos-section-heading span,
+html[data-theme="dark"] .operations-pos .pos-table-card-status,
+html[data-theme="dark"] .operations-pos .pos-table-open-count,
+html[data-theme="dark"] .operations-pos .page-range,
+html[data-theme="dark"] .operations-pos .pos-checkout-context p,
+html[data-theme="dark"] .operations-pos .pos-checkout-section,
+html[data-theme="dark"] .operations-pos .pos-ledger-heading span,
+html[data-theme="dark"] .operations-pos .pos-item-description p,
+html[data-theme="dark"] .operations-pos .pos-item-scroll .scroll-panel-controls,
+html[data-theme="dark"] .operations-pos .pos-empty-ledger,
+html[data-theme="dark"] .operations-pos .pos-payment-heading > div > span,
+html[data-theme="dark"] .operations-pos .pos-payment-breakdown > div,
+html[data-theme="dark"] .operations-pos .pos-discount-presets > span,
+html[data-theme="dark"] .operations-pos .pos-partial-field small,
+html[data-theme="dark"] .operations-pos .pos-payment-pending,
+html[data-theme="dark"] .operations-pos .pos-no-selection,
+html[data-theme="dark"] .operations-pos .pos-dialog-description,
+html[data-theme="dark"] .operations-pos .pos-menu-search-control,
+html[data-theme="dark"] .operations-pos .pos-menu-result small,
+html[data-theme="dark"] .operations-pos .pos-menu-empty,
+html[data-theme="dark"] .operations-pos .pos-shift-summary > div,
+html[data-theme="dark"] .operations-pos .receipt-paper-header p,
+html[data-theme="dark"] .operations-pos .receipt-paper-header time,
+html[data-theme="dark"] .operations-pos .receipt-paper-footer,
+html[data-theme="dark"] .operations-pos .receipt-close-button,
+html[data-theme="dark"] .operations-pos .floorplan-zoom-bar,
+html[data-theme="dark"] .operations-pos .floorplan-zoom-bar span {
+  color: var(--pos-muted);
+}
+html[data-theme="dark"] .operations-pos .pos-command-brand h1,
+html[data-theme="dark"] .operations-pos .pos-command-summary strong,
+html[data-theme="dark"] .operations-pos .pos-table-view-toggle button[aria-pressed="true"],
+html[data-theme="dark"] .operations-pos .pos-section-heading h2,
+html[data-theme="dark"] .operations-pos .pos-table-card,
+html[data-theme="dark"] .operations-pos .pos-table-card strong,
+html[data-theme="dark"] .operations-pos .page-controls,
+html[data-theme="dark"] .operations-pos .page-controls .icon-action,
+html[data-theme="dark"] .operations-pos .page-select select,
+html[data-theme="dark"] .operations-pos .pos-checkout-heading-line h2,
+html[data-theme="dark"] .operations-pos .pos-back-to-tables,
+html[data-theme="dark"] .operations-pos .pos-close-account,
+html[data-theme="dark"] .operations-pos .pos-ledger-heading h3,
+html[data-theme="dark"] .operations-pos .pos-item-description strong,
+html[data-theme="dark"] .operations-pos .pos-item-line-total,
+html[data-theme="dark"] .operations-pos .pos-item-scroll .scroll-panel-controls button,
+html[data-theme="dark"] .operations-pos .pos-payment-heading h3,
+html[data-theme="dark"] .operations-pos .pos-preview-button,
+html[data-theme="dark"] .operations-pos .pos-discount-presets button,
+html[data-theme="dark"] .operations-pos .pos-discount-fields label,
+html[data-theme="dark"] .operations-pos .pos-partial-field,
+html[data-theme="dark"] .operations-pos .pos-payment-methods .pos-method-other,
+html[data-theme="dark"] .operations-pos .pos-no-selection h2,
+html[data-theme="dark"] .operations-pos .workspace-dialog,
+html[data-theme="dark"] .operations-pos .workspace-dialog .dialog-heading h2,
+html[data-theme="dark"] .operations-pos .workspace-dialog .dialog-heading .icon-action,
+html[data-theme="dark"] .operations-pos .pos-menu-search,
+html[data-theme="dark"] .operations-pos .pos-menu-result,
+html[data-theme="dark"] .operations-pos .pos-menu-result strong,
+html[data-theme="dark"] .operations-pos .pos-menu-result-price,
+html[data-theme="dark"] .operations-pos .pos-shift-cash-field,
+html[data-theme="dark"] .operations-pos .pos-dialog-secondary,
+html[data-theme="dark"] .operations-pos .pos-shift-summary dd,
+html[data-theme="dark"] .operations-pos .pos-shift-summary .is-total,
+html[data-theme="dark"] .operations-pos .receipt-paper,
+html[data-theme="dark"] .operations-pos .receipt-paper-header h3,
+html[data-theme="dark"] .operations-pos .receipt-paper-context,
+html[data-theme="dark"] .operations-pos .receipt-paper-items,
+html[data-theme="dark"] .operations-pos .receipt-print-message,
+html[data-theme="dark"] .operations-pos .floorplan-zoom-bar button {
+  color: var(--pos-text);
+}
+html[data-theme="dark"] .operations-pos .pos-command-link:hover,
+html[data-theme="dark"] .operations-pos .pos-back-to-tables:hover,
+html[data-theme="dark"] .operations-pos .pos-close-account:hover,
+html[data-theme="dark"] .operations-pos .pos-preview-button:hover:not(:disabled),
+html[data-theme="dark"] .operations-pos .pos-dialog-secondary:hover,
+html[data-theme="dark"] .operations-pos .receipt-print-actions button:hover:not(:disabled),
+html[data-theme="dark"] .operations-pos .floorplan-zoom-bar button:hover:not(:disabled) {
+  background: var(--pos-inset);
+}
+html[data-theme="dark"] .operations-pos .floorplan-zoom-bar button {
+  border-color: var(--pos-control);
+  background: var(--pos-surface);
+}
+html[data-theme="dark"] .operations-pos .pos-table-view-toggle button[aria-pressed="true"] {
+  border-color: var(--pos-separator);
+  color: var(--pos-text);
+  background: var(--pos-surface);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+html[data-theme="dark"] .operations-pos .pos-item-line,
+html[data-theme="dark"] .operations-pos .pos-checkout-header,
+html[data-theme="dark"] .operations-pos .pos-payment-panel,
+html[data-theme="dark"] .operations-pos .pos-menu-dialog .page-controls,
+html[data-theme="dark"] .operations-pos .receipt-paper-header,
+html[data-theme="dark"] .operations-pos .receipt-paper-context,
+html[data-theme="dark"] .operations-pos .receipt-paper-items,
+html[data-theme="dark"] .operations-pos .receipt-paper-footer {
+  border-color: var(--pos-separator);
+}
+html[data-theme="dark"] .operations-pos .receipt-paper-totals .is-paid,
+html[data-theme="dark"] .operations-pos .receipt-paper-totals .is-total {
+  color: var(--pos-action);
+}
+html[data-theme="dark"] .operations-pos .receipt-manual-note {
+  border-color: var(--pos-action);
+  color: var(--pos-text);
+  background: var(--pos-selected);
+}
+html[data-theme="dark"] .operations-pos .pos-item-quantity,
+html[data-theme="dark"] .operations-pos .pos-no-selection > svg,
+html[data-theme="dark"] .operations-pos .pos-menu-result-price svg {
+  color: var(--pos-action);
+}
+html[data-theme="dark"] .operations-pos .pos-mobile-switch {
+  border-color: var(--pos-separator);
+  background: var(--pos-inset);
+}
+html[data-theme="dark"] .operations-pos .pos-mobile-switch button {
+  color: var(--pos-muted);
+}
+html[data-theme="dark"] .operations-pos .pos-mobile-switch button span {
+  color: var(--pos-action);
+  background: var(--pos-selected);
+}
+html[data-theme="dark"] .operations-pos .pos-command-link,
+html[data-theme="dark"] .operations-pos .pos-method-other,
+html[data-theme="dark"] .operations-pos .pos-dialog-secondary {
+  border-color: var(--pos-control);
+}
+html[data-theme="dark"] .operations-pos .pos-remove-item:hover {
+  border-color: #b7776e;
+  color: var(--pos-danger);
+  background: var(--pos-danger-bg);
+}
+
+@media (min-width: 1200px) {
+  .pos-main {
+    grid-template-columns: minmax(0, 46%) minmax(0, 1fr);
+  }
+  .pos-table-view-toggle {
+    display: flex;
+  }
+  .pos-floorplan-panel {
+    display: block;
+  }
+  .pos-mobile-table-list {
+    display: none;
+  }
+  .pos-table-selector[data-table-view="list"] .pos-floorplan-panel {
+    display: none;
+  }
+  .pos-table-selector[data-table-view="list"] .pos-mobile-table-list {
+    display: block;
+    flex: 1 1 auto;
+    overflow-y: auto;
+  }
+  .pos-checkout-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 36%);
+    gap: 15px;
+    padding-top: 5px;
+  }
+  .pos-ledger {
+    min-height: 0;
+    padding-right: 13px;
+    border-right: 1px solid #e3e3e8;
+  }
+  .pos-payment-panel {
+    min-height: 0;
+    overflow: auto;
+    padding: 7px 2px 2px;
+    border-top: 0;
+  }
+  .pos-checkout-header {
+    padding-bottom: 10px;
+  }
+  .pos-back-to-tables {
+    display: inline-flex;
+  }
+}
+
+@media (min-width: 900px) and (max-width: 1199px) {
+  .pos-table-view-toggle {
+    display: flex;
+  }
+  .pos-table-selector[data-table-view="floorplan"] .pos-mobile-table-list {
+    display: none;
+  }
+  .pos-table-selector[data-table-view="floorplan"] .pos-floorplan-panel {
+    display: block;
+  }
+}
+
+@media (max-width: 1199px) {
+  .operations-pos {
+    gap: 9px;
+    padding: 9px 10px 12px;
+  }
+  .pos-command-bar {
+    grid-template-columns: minmax(145px, 0.8fr) minmax(150px, 0.8fr) minmax(0, 1.5fr);
+    gap: 9px;
+  }
+  .pos-command-summary {
+    display: none;
+  }
+  .pos-command-actions {
+    justify-content: flex-end;
+  }
+  .pos-mobile-switch {
+    display: grid;
+    flex: 0 0 auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+    padding: 4px;
+    border: 1px solid #d5d5dc;
+    border-radius: 14px;
+    background: #ededf2;
+  }
+  .pos-mobile-switch button {
+    display: flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 10px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    color: #626269;
+    background: transparent;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .pos-mobile-switch button.is-selected {
+    border-color: #d5d5dc;
+    color: #1d1d1f;
+    background: #fff;
+  }
+  .pos-mobile-switch button:disabled {
+    opacity: 0.5;
+  }
+  .pos-mobile-switch button span {
+    padding: 2px 6px;
+    border-radius: 7px;
+    color: #005bb8;
+    background: #eaf2ff;
+    font-size: 12px;
+  }
+  .pos-main {
+    display: block;
+  }
+  .pos-table-selector,
+  .pos-checkout-panel {
+    display: none;
+    height: 100%;
+  }
+  .pos-main[data-mobile-pane="tables"] .pos-table-selector {
+    display: flex;
+  }
+  .pos-main[data-mobile-pane="account"] .pos-checkout-panel {
+    display: flex;
+  }
+  .pos-mobile-table-list {
+    flex: 1 1 auto;
+    overflow-y: auto;
+  }
+  .pos-table-card-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .pos-checkout-header {
+    align-items: flex-start;
+  }
+  .pos-back-to-tables {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 760px) {
+  .operations-kds {
+    height: calc(100dvh - var(--header-height, 64px));
+    gap: 8px;
+    padding: 8px;
+  }
+  .kds-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 8px;
+  }
+  .kds-brand {
+    min-width: 0;
+    gap: 8px;
+  }
+  .kds-brand-icon {
+    width: 38px;
+    height: 38px;
+  }
+  .kds-brand h1 {
+    font-size: 15px;
+    line-height: 20px;
+  }
+  .kds-eyebrow {
+    font-size: 11px;
+  }
+  .kds-tabs {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .kds-tabs button {
+    justify-content: center;
+    gap: 5px;
+    min-width: 0;
+    padding: 0 6px;
+    font-size: 12px;
+  }
+  .kds-tab-count {
+    min-width: 19px;
+    padding: 2px 4px;
+    font-size: 11px;
+  }
+  .kds-fullscreen-button {
+    width: 42px;
+    min-width: 42px;
+    justify-content: center;
+    padding: 0;
+  }
+  .kds-fullscreen-button span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+  .kds-metrics {
+    gap: 6px;
+  }
+  .kds-metric {
+    min-height: 58px;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 2px;
+    padding: 7px 9px;
+    border-radius: 12px;
+  }
+  .kds-metric span {
+    font-size: 11px;
+    line-height: 15px;
+  }
+  .kds-metric strong {
+    margin: 0;
+    font-size: 18px;
+    line-height: 22px;
+  }
+  .kds-workspace {
+    display: block;
+  }
+  .kds-workspace > section {
+    display: none;
+    height: 100%;
+  }
+  .kds-workspace[data-mobile-pane="tickets"] .kds-ticket-list,
+  .kds-workspace[data-mobile-pane="detail"] .kds-ticket-detail {
+    display: flex;
+  }
+  .kds-panel-heading {
+    min-height: 58px;
+  }
+  .kds-panel-heading h2 {
+    font-size: 16px;
+    line-height: 22px;
+  }
+  .kds-panel-heading span {
+    font-size: 12px;
+  }
+  .kds-mobile-back {
+    display: inline-flex;
+    min-height: 40px;
+    align-items: center;
+    gap: 5px;
+    padding: 0 7px;
+    border: 1px solid var(--kds-control);
+    border-radius: 10px;
+    color: var(--kds-text);
+    background: var(--kds-surface);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .kds-ticket-grid {
+    padding: 9px;
+  }
+  .kds-ticket-card {
+    gap: 5px;
+    padding: 9px;
+  }
+  .kds-ticket-card-top > strong {
+    font-size: 18px;
+    line-height: 23px;
+  }
+  .kds-ticket-card-meta,
+  .kds-ticket-card-summary {
+    font-size: 12px;
+  }
+  .kds-detail-summary {
+    gap: 8px;
+    padding: 10px;
+  }
+  .kds-detail-table {
+    font-size: 12px;
+  }
+  .kds-detail-table-number {
+    font-size: 25px;
+    line-height: 30px;
+  }
+  .kds-detail-time {
+    gap: 4px;
+  }
+  .kds-detail-time strong {
+    font-size: 18px;
+  }
+  .kds-detail-time span {
+    display: none;
+  }
+  .kds-status-chip {
+    min-height: 26px;
+    padding: 2px 7px;
+    font-size: 11px;
+  }
+  .operations-kds .kds-detail-scroll .scroll-panel-content > div {
+    padding: 9px;
+  }
+  .kds-item-row {
+    grid-template-columns: 40px minmax(0, 1fr) 32px;
+    gap: 8px;
+  }
+  .kds-item-quantity {
+    width: 36px;
+    height: 36px;
+    font-size: 19px;
+  }
+  .kds-item-copy > strong {
+    font-size: 16px;
+    line-height: 22px;
+  }
+  .kds-item-note,
+  .kds-order-note p {
+    font-size: 15px;
+    line-height: 22px;
+  }
+  .kds-ticket-actions {
+    padding: 9px;
+  }
+
+  .operations-pos {
+    height: calc(100dvh - var(--header-height, 64px));
+    gap: 7px;
+    padding: 7px;
+  }
+  .pos-command-bar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 7px;
+    min-height: 62px;
+    padding: 8px;
+  }
+  .pos-command-brand {
+    gap: 8px;
+  }
+  .pos-command-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+  }
+  .pos-command-brand > div > span {
+    font-size: 10px;
+    line-height: 13px;
+  }
+  .pos-command-brand h1 {
+    font-size: 16px;
+    line-height: 21px;
+  }
+  .pos-section-picker {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .pos-section-picker > span {
+    flex: 0 0 auto;
+  }
+  .pos-section-picker select {
+    min-height: 40px;
+  }
+  .pos-command-actions {
+    grid-column: 2;
+    grid-row: 1;
+    gap: 5px;
+  }
+  .pos-shift-status {
+    min-height: 38px;
+    padding: 0 7px;
+    font-size: 11px;
+  }
+  .pos-shift-status span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+  .pos-command-button,
+  .pos-command-link {
+    min-height: 38px;
+    padding: 0 8px;
+    font-size: 11px;
+  }
+  .pos-command-link {
+    display: none;
+  }
+  .pos-mobile-switch {
+    gap: 3px;
+    padding: 3px;
+    border-radius: 12px;
+  }
+  .pos-mobile-switch button {
+    min-height: 42px;
+    padding: 0 6px;
+    font-size: 12px;
+  }
+  .pos-main {
+    min-height: 0;
+  }
+  .pos-table-selector {
+    padding: 9px;
+    border-radius: 15px;
+  }
+  .pos-section-heading {
+    padding-bottom: 9px;
+  }
+  .pos-section-heading h2 {
+    font-size: 17px;
+    line-height: 22px;
+  }
+  .pos-section-heading span {
+    font-size: 11px;
+  }
+  .pos-table-card-grid {
+    gap: 6px;
+  }
+  .pos-table-card {
+    min-height: 66px;
+    padding: 6px;
+  }
+  .pos-table-card strong {
+    font-size: 15px;
+    line-height: 20px;
+  }
+  .pos-table-card-status {
+    font-size: 10px;
+    line-height: 14px;
+  }
+  .pos-checkout-panel {
+    padding: 9px;
+    border-radius: 15px;
+  }
+  .pos-checkout-header {
+    min-height: 52px;
+    gap: 7px;
+    padding-bottom: 8px;
+  }
+  .pos-checkout-table-mark {
+    display: none;
+  }
+  .pos-checkout-heading-line h2 {
+    font-size: 19px;
+    line-height: 24px;
+  }
+  .pos-checkout-context p {
+    font-size: 11px;
+    line-height: 15px;
+  }
+  .pos-checkout-header-actions {
+    gap: 4px;
+  }
+  .pos-back-to-tables,
+  .pos-add-item-button,
+  .pos-close-account {
+    min-height: 40px;
+    padding: 0 8px;
+    font-size: 11px;
+  }
+  .pos-add-item-button {
+    width: 40px;
+    padding: 0;
+  }
+  .pos-add-item-button span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+  .pos-close-account {
+    width: 40px;
+  }
+  .pos-ledger-heading {
+    min-height: 38px;
+  }
+  .pos-ledger-heading h3 {
+    font-size: 14px;
+    line-height: 19px;
+  }
+  .pos-item-line {
+    grid-template-columns: 34px minmax(0, 1fr) minmax(74px, auto) 40px;
+    gap: 5px;
+    min-height: 54px;
+  }
+  .pos-item-quantity {
+    font-size: 13px;
+  }
+  .pos-item-description strong {
+    font-size: 13px;
+    line-height: 18px;
+  }
+  .pos-item-description p {
+    font-size: 12px;
+    line-height: 17px;
+  }
+  .pos-item-line-total {
+    font-size: 12px;
+  }
+  .pos-remove-item {
+    width: 40px;
+    height: 40px;
+  }
+  .pos-payment-panel {
+    gap: 7px;
+    padding-top: 8px;
+  }
+  .pos-payment-heading h3 {
+    font-size: 17px;
+    line-height: 22px;
+  }
+  .pos-preview-button {
+    min-height: 40px;
+    padding: 0 7px;
+    font-size: 11px;
+  }
+  .pos-payment-breakdown {
+    gap: 2px;
+    padding: 7px 9px;
+  }
+  .pos-payment-breakdown > div {
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .pos-payment-breakdown .pos-remaining-row dd {
+    font-size: 19px;
+    line-height: 25px;
+  }
+  .pos-discount-presets button {
+    min-width: 42px;
+    min-height: 38px;
+    padding: 0 7px;
+  }
+  .pos-discount-fields {
+    grid-template-columns: minmax(72px, 0.42fr) minmax(0, 1fr);
+    gap: 6px;
+  }
+  .pos-discount-fields label,
+  .pos-partial-field {
+    font-size: 11px;
+    line-height: 15px;
+  }
+  .pos-discount-fields input,
+  .pos-partial-field input {
+    min-height: 40px;
+    padding: 7px 8px;
+    font-size: 13px;
+  }
+  .pos-partial-field small {
+    font-size: 11px;
+    line-height: 15px;
+  }
+  .pos-payment-methods {
+    gap: 5px;
+  }
+  .pos-payment-methods button {
+    min-height: 46px;
+    flex-direction: column;
+    gap: 2px;
+    padding: 4px;
+    font-size: 11px;
+    line-height: 15px;
+  }
+  .operations-pos .workspace-dialog .dialog-heading {
+    min-height: 56px;
+    padding: 8px 12px;
+  }
+  .operations-pos .workspace-dialog .dialog-heading h2 {
+    font-size: 17px;
+    line-height: 22px;
+  }
+  .operations-pos .workspace-dialog .dialog-content {
+    gap: 11px;
+    padding: 12px;
+  }
+  .receipt-paper {
+    gap: 8px;
+    padding: 11px;
+    font-size: 12px;
+    line-height: 17px;
+  }
+  .receipt-print-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 370px) {
+  .pos-section-picker > span {
+    max-width: 86px;
+    font-size: 10px;
+  }
+  .pos-back-to-tables {
+    width: 44px;
+    min-width: 44px;
+    overflow: hidden;
+    padding: 0;
+    font-size: 0;
+  }
+  .pos-back-to-tables::before {
+    content: "‹";
+    font-size: 24px;
+    line-height: 1;
+  }
+  .pos-discount-fields {
+    grid-template-columns: 74px minmax(0, 1fr);
+  }
+  .kds-tabs button {
+    flex-direction: column;
+    min-height: 60px;
+    gap: 4px;
+    padding: 6px;
+    text-align: center;
+  }
+  .kds-tabs button > span:first-child {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    line-height: 16px;
+  }
+  .kds-tab-count {
+    flex-shrink: 0;
+  }
+  .kds-detail-time svg {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .operations-kds *,
+  .operations-pos * {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  .receipt-dialog[open] {
+    position: static !important;
+    display: block !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    color: #000 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+  }
+  .receipt-dialog[open] > .dialog-heading,
+  .receipt-dialog[open] > .dialog-content > :not(#printable-receipt) {
+    display: none !important;
+  }
+  #printable-receipt,
+  #printable-receipt * {
+    visibility: visible !important;
+  }
+  #printable-receipt {
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    width: 72mm !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    color: #000 !important;
+    background: #fff !important;
+    font-size: 10pt !important;
+    line-height: 1.35 !important;
+  }
+  .receipt-paper-items {
+    max-height: none !important;
+    overflow: visible !important;
+    break-inside: auto !important;
+  }
+  .receipt-paper-items > div,
+  .receipt-paper-totals > div {
+    break-inside: avoid;
+  }
+  @page {
+    margin: 8mm;
+  }
+}
+
+/* Short displays keep ticket contents and actions in the page scroll. */
+@media screen and (max-height: 740px) {
+  body.app-shell > main:has(> .operations-kds) {
+    overflow: auto;
+  }
+  .operations-kds,
+  .operations-kds.is-fullscreen {
+    height: auto;
+    min-height: calc(100dvh - var(--header-height));
+    overflow: visible;
+  }
+  .kds-workspace {
+    flex: 0 0 auto;
+    min-height: 430px;
+  }
+  .kds-workspace > section {
+    min-height: 430px;
+  }
+  .kds-ticket-grid {
+    min-height: 220px;
+    max-height: 420px;
+    flex: none;
+  }
+  .kds-detail-scroll {
+    min-height: 200px;
+    flex: none;
+  }
+  .kds-detail-scroll .scroll-panel-content {
+    overflow: visible;
+  }
+  .kds-ticket-detail {
+    overflow: visible;
+  }
+}
+@media screen and (pointer: coarse) {
+  .kds-fullscreen-button,
+  .kds-mobile-back,
+  .operations-kds .icon-action,
+  .operations-kds .page-controls button,
+  .operations-kds .scroll-panel-controls button,
+  .kds-inline-error button,
+  .kds-new-tickets button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+/* Valid long table/section names must never push status or elapsed time outside tickets. */
+.kds-ticket-card-top {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+.kds-ticket-card-top > strong {
+  flex: 1 1 150px;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.kds-ticket-card-meta {
+  flex-wrap: wrap;
+}
+.kds-ticket-card-meta > span:first-child {
+  flex: 1 1 120px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.kds-ticket-card-meta > span:last-child {
+  flex-shrink: 0;
+}
+.kds-detail-summary {
+  flex-wrap: wrap;
+}
+.kds-detail-table {
+  flex: 1 1 180px;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.kds-detail-time {
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  max-width: 100%;
+}
+.kds-detail-summary .kds-status-chip {
+  flex-shrink: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}

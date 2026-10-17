@@ -1,0 +1,20 @@
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+import { NextResponse } from "next/server";
+import { readImageRequest, storeMenuImage } from "@/lib/menu-images.cjs";
+
+export async function POST(request) {
+  try {
+    const { bytes, type } = await readImageRequest(request);
+    return NextResponse.json(await storeMenuImage(bytes, type), {
+      status: 201,
+      headers: { "Cache-Control": "no-store" },
+    });
+  } catch (error) {
+    if (!error.status) console.error("Menu photo upload failed:", error);
+    return NextResponse.json(
+      { error: error.status ? error.message : "Fotoğraf kaydedilemedi. Yeniden deneyin." },
+      { status: error.status || 500 }
+    );
+  }
+}

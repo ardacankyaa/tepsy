@@ -1,0 +1,520 @@
+/* User-selected theme. Print remains on the established light palette. */
+@media screen {
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --background: #17181c;
+    --canvas: #17181c;
+    --background-elevated: #232429;
+    --surface: #232429;
+    --surface-strong: #303137;
+    --surface-raised: #2c2d33;
+    --surface-soft: #232429;
+    --surface-inset: #1c1d22;
+    --border: #41434d;
+    --border-strong: #888b97;
+    --control-border: #888b97;
+    --foreground: #f5f5f7;
+    --text-primary: #f5f5f7;
+    --text-secondary: #b7b8c2;
+    --text-muted: #b7b8c2;
+    --accent: #8cc2ff;
+    --accent-hover: #add3ff;
+    --accent-strong: #b6d8ff;
+    --accent-ink: #0a2342;
+    --accent-soft: #203b5b;
+    --accent-gold: #b7b8c2;
+    --success: #84dda5;
+    --success-surface: #163225;
+    --success-border: #4e9569;
+    --warning: #ffd28a;
+    --warning-surface: #3a2c19;
+    --warning-border: #9f7b42;
+    --danger: #ffb4aa;
+    --danger-soft: #422723;
+    --danger-surface: #422723;
+    --danger-border: #b7776e;
+    --chair-available-bg: #1e3f2f;
+    --chair-available-border: #3b7454;
+    --chair-occupied-bg: #4c2927;
+    --chair-occupied-border: #8c4c47;
+    --chair-bill-bg: #4a381e;
+    --chair-bill-border: #8a6a32;
+    --chair-selected-bg: #1c3d66;
+    --chair-selected-border: #4d94e8;
+  }
+  html[data-theme="dark"] .app-sidebar {
+    background: #1c1d22;
+  }
+  html[data-theme="dark"] .workspace-topbar {
+    background: #17181ceb;
+  }
+  html[data-theme="dark"] .nav-link:hover {
+    background: var(--surface-strong);
+  }
+  html[data-theme="dark"] .nav-brand-mark,
+  html[data-theme="dark"] .login-brand-mark {
+    color: var(--canvas);
+  }
+}
+:root {
+  --header-height: 48px;
+}
+.workspace-topbar {
+  padding: 0 20px;
+}
+.workspace-topbar .nav-tools time {
+  display: block;
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+.service-notification-trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid var(--warning-border);
+  border-radius: 10px;
+  background: var(--warning-surface);
+  color: var(--warning);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.service-notification-trigger strong {
+  min-width: 22px;
+  text-align: center;
+}
+.service-notification-dialog .dialog-content {
+  overflow: auto;
+}
+.service-notification-call {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--warning-border);
+  border-radius: 12px;
+  background: var(--warning-surface);
+}
+.service-notification-call > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.service-notification-call p {
+  margin: 3px 0 0;
+  font-size: 13px;
+}
+.service-notification-call button {
+  min-height: 44px;
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+.service-notification-link {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 44px;
+}
+.table-call-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px;
+  border: 1px solid var(--warning-border);
+  border-radius: 8px;
+  background: var(--warning-surface);
+  color: var(--warning);
+  font-size: 11px;
+  font-weight: 700;
+}
+.service-table-main .table-call-label {
+  color: var(--warning);
+  font-size: 11px;
+  justify-self: start;
+}
+@media (max-width: 599px) {
+  .workspace-topbar:has(.service-notification-trigger) .nav-tools time {
+    display: none;
+  }
+  .service-notification-call {
+    flex-wrap: wrap;
+  }
+}
+.preferences-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.preferences-trigger svg {
+  flex-shrink: 0;
+}
+.navigation-dialog .preferences-trigger {
+  width: 100%;
+  margin: 16px 0;
+}
+.preference-group h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+.theme-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.theme-options button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 76px;
+  border: 1px solid var(--control-border);
+  border-radius: 14px;
+  background: var(--surface-inset);
+  transition:
+    background 180ms ease,
+    border-color 180ms ease;
+}
+.theme-options button[aria-pressed="true"] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+.preference-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 60px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+  font-size: 14px;
+}
+.preference-row input {
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  margin: 11px;
+}
+.preference-row.nav-connection {
+  margin: 0;
+  font-size: 12px;
+}
+.preference-row.nav-connection > span:last-child {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.connection-warning {
+  position: fixed;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 80;
+  max-width: calc(100vw - 24px);
+  padding: 10px 16px;
+  border: 1px solid var(--warning-border);
+  border-radius: 12px;
+  background: var(--warning-surface);
+  color: var(--warning);
+  font-size: 13px;
+}
+
+/* Give the selected room a full canvas, while retaining the all-rooms overview. */
+.owner-experience.service-root {
+  padding: 12px 16px;
+  gap: 8px;
+}
+.owner-experience .service-toolbar {
+  min-height: 52px;
+  padding: 4px 12px;
+}
+.owner-experience .service-summary {
+  min-height: 40px;
+}
+.owner-experience .service-summary-item {
+  padding: 5px 12px;
+}
+.owner-experience .service-floor-panel > .service-panel-heading {
+  min-height: 66px;
+  padding: 8px 14px;
+}
+.owner-experience .service-floor-content {
+  padding: 6px;
+}
+@media (min-width: 1024px) {
+  .owner-experience .service-owner-workspace {
+    grid-template-columns: minmax(0, 1fr) 290px;
+  }
+  .owner-experience .service-owner-workspace.is-editing {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 767px) {
+  .owner-experience.service-root {
+    padding: 8px;
+  }
+  .owner-experience .service-toolbar {
+    gap: 8px;
+  }
+  .owner-experience .service-summary-item {
+    padding: 5px 8px;
+    font-size: 11px;
+  }
+  .owner-experience .service-floor-panel > .service-panel-heading {
+    padding: 8px;
+  }
+  .owner-experience .service-panel-title p {
+    display: none;
+  }
+}
+
+/* Brief continuity when selecting a room; no animation on live order updates. */
+@keyframes room-enter {
+  from {
+    opacity: 0.65;
+    transform: scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes panel-enter {
+  from {
+    opacity: 0.6;
+    transform: translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .service-plan-canvas {
+    animation: room-enter 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .service-table-detail-content {
+    animation: panel-enter 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .nav-link {
+    transition:
+      background 180ms ease,
+      color 180ms ease,
+      transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .nav-link:hover {
+    transform: translateX(2px);
+  }
+  .service-segmented button,
+  .theme-options button {
+    transition:
+      background 180ms ease,
+      color 180ms ease,
+      box-shadow 180ms ease,
+      transform 120ms ease;
+  }
+  .workspace-dialog::backdrop {
+    animation: room-enter 180ms ease;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .service-plan-canvas,
+  .service-table-detail-content {
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/* Service actions stay prominent; editing belongs to Management. */
+:root {
+  --header-height: 32px;
+}
+.workspace-topbar {
+  padding: 0 16px;
+}
+.workspace-topbar .topbar-title,
+.workspace-topbar .topbar-restaurant,
+.workspace-topbar .nav-tools time {
+  font-size: 12px;
+}
+.owner-experience .service-inspector-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.owner-experience .service-inspector-actions .service-button {
+  min-height: 62px;
+  font-size: 14px;
+  justify-content: center;
+  padding: 8px;
+}
+.owner-experience:not(.floor-editor-page) .service-toolbar-actions .service-button {
+  min-height: 48px;
+  padding: 0 20px;
+}
+.service-room-browser {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+.service-room-browser .service-plan-section {
+  flex: 1;
+  min-height: 0;
+  border: 0;
+}
+.service-room-browser .service-plan-section > h3 {
+  position: static;
+  width: fit-content;
+  margin: 0 0 6px;
+  padding: 4px 8px;
+}
+.service-room-browser .service-plan-section {
+  display: flex;
+  flex-direction: column;
+}
+.service-room-browser .service-plan-section > .floorplan-root {
+  flex: 1;
+  height: auto;
+}
+.service-room-browser .page-controls {
+  padding: 0 6px;
+  min-height: 44px;
+}
+.floor-editor-page .service-summary {
+  display: none;
+}
+.floor-editor-page .service-panel-title p {
+  display: none;
+}
+.floor-editor-page .service-owner-workspace.is-editing .service-floor-panel {
+  min-height: 0;
+}
+.floor-editor-page .service-floor-panel > .service-panel-heading {
+  min-height: 58px;
+  padding: 4px 12px;
+}
+.floor-editor-page .service-section-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.floorplan-editor {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  gap: 6px;
+}
+.floorplan-editor > .floor-mode-bar {
+  grid-column: 1/-1;
+  margin: 0;
+  padding: 0 0 4px;
+  min-height: 48px;
+}
+.floorplan-editor .floor-mode-bar > div:first-child > span:not(.floorplan-unsaved-status) {
+  display: none;
+}
+.floorplan-editor > .floorplan-zoom-bar {
+  grid-column: 1/-1;
+  margin: 0;
+}
+.floorplan-editor > .floorplan-zoom-bar > span {
+  display: none;
+}
+.floorplan-editor > .floorplan-zoom-bar > div {
+  flex-wrap: wrap;
+}
+.floorplan-editor > .floorplan-viewport {
+  grid-column: 1/-1;
+  min-height: 0;
+}
+.floor-tool-disclosure {
+  position: relative;
+  min-width: 0;
+}
+.floor-tool-disclosure > summary {
+  display: list-item;
+  list-style-position: inside;
+  min-height: 44px;
+  padding: 11px 12px;
+  border: 1px solid var(--control-border);
+  border-radius: 12px;
+  background: var(--surface);
+  font-size: 13px;
+  cursor: pointer;
+}
+.floor-tool-disclosure[open] > summary {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.floor-tool-disclosure > div {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 45;
+  width: min(520px, calc(100vw - 70px));
+  max-height: 320px;
+  overflow: auto;
+  flex-wrap: wrap;
+  padding: 12px;
+  box-shadow: 0 12px 32px #0003;
+}
+.floor-size-tools > div {
+  left: auto;
+  right: 0;
+}
+.floorplan-editor > .floor-table-properties,
+.floorplan-editor > .floorplan-selection-panel {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 40;
+  width: min(340px, calc(100% - 16px));
+  max-height: 65%;
+  overflow: auto;
+  align-content: start;
+  box-shadow: 0 12px 32px #0003;
+}
+.floorplan-editor > .floor-table-properties > div {
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+@media (max-width: 767px) {
+  :root {
+    --header-height: 44px;
+  }
+  .floor-editor-page .service-heading-copy p {
+    display: none;
+  }
+  .floor-editor-page .service-heading-copy h1 {
+    font-size: 20px;
+  }
+  .floor-editor-page .service-brand-mark {
+    display: none;
+  }
+  .floor-editor-page .service-toolbar-actions > .service-button:not(.service-mobile-cart-trigger) {
+    max-width: none;
+    font-size: 12px;
+    padding: 0 8px;
+  }
+  .floor-tool-disclosure > summary {
+    font-size: 12px;
+    padding: 11px 8px;
+  }
+  .floorplan-editor .floorplan-unsaved-status {
+    max-width: 110px;
+    white-space: normal;
+  }
+}
