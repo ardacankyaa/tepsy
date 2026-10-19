@@ -45,7 +45,7 @@ export function AppProvider({ children, initialLang = "tr" }) {
 
     if (
       pathname.startsWith("/menu/") ||
-      ["/privacy", "/terms", "/cookies", "/login"].includes(pathname)
+      ["/privacy", "/terms", "/cookies", "/login", "/account-help"].includes(pathname)
     )
       return;
 

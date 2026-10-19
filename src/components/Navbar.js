@@ -27,7 +27,7 @@ import ServiceNotifications from "@/components/ServiceNotifications";
 export default function Navbar() {
   const pathname = usePathname();
   if (
-    ["/login", "/setup", "/privacy", "/terms", "/cookies"].includes(pathname) ||
+    ["/login", "/account-help", "/setup", "/privacy", "/terms", "/cookies"].includes(pathname) ||
     pathname.startsWith("/menu/")
   )
     return null;

@@ -22,6 +22,7 @@ const rootFiles = [
   "server.js",
   "SETUP.bat",
   "START.bat",
+  "OWNER-RECOVERY.bat",
   "DEMO.bat",
   "STOP.bat",
   ".nvmrc",

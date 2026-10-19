@@ -64,6 +64,40 @@ python3 scripts/initialize-sqlite.py --database prisma/dev.db
 npm run db:push && npm run dev
 ```
 
+## Account recovery and independent restaurants
+
+The login page provides **Forgot password** / **Şifremi unuttum**. For an owner:
+
+1. On the computer running the relevant restaurant, open `OWNER-RECOVERY.bat`
+   from the project folder or that installation's folder. The project launcher
+   targets the normal private installation; an installed restaurant's launcher
+   targets that restaurant. To choose another installation explicitly, run
+   `npm run owner:recovery -- --installation "C:/path/to/restaurant/app"`.
+2. Copy the displayed one-use code into the recovery form on the server computer
+   and choose a new password. The code expires after ten minutes. Keep it private.
+3. Sign in with the new password. Old sessions are invalidated. Restaurant data
+   is preserved. If the response is lost, try the new password before generating
+   another recovery code.
+
+The browser cannot generate the recovery proof itself. Access to the server's
+private installation is required; there is no email password-reset service.
+For a forgotten staff PIN, the owner assigns a new PIN in **Team**.
+
+**Create a new restaurant** / **Yeni restoran oluştur** requires the current
+owner's password (or a valid owner session) on the server computer. It starts a
+fresh installation on another available port and opens its setup wizard. The
+existing restaurant is retained. Each restaurant has separate database, sessions,
+photos, device configuration, backups and a new signing secret; provider credentials
+are not copied. New installations support staff access over the local network after
+server-local setup. The original installation and legacy cookie names still work.
+
+Independent installations live below the parent installation's
+`.tepsy/restaurants/<id>/app`. Keep the resulting URL. After restarting the computer,
+run `START.bat` inside that restaurant's own installation folder. From the parent
+installation you can also run `node scripts/new-restaurant.cjs start <id>`.
+Back up each restaurant separately; a restaurant's recovery ZIP does not include
+the other installations. New restaurant creation is unavailable in demo mode.
+
 ## Configuration
 
 Defaults work without `.env`. Copy [.env.example](../.env.example) to the private installation for overrides.

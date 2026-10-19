@@ -30,6 +30,11 @@ const commands = [
   ["production build", process.execPath, [npmCli, "run", "build"]],
   ["managed demo installation", process.execPath, [npmCli, "run", "test:managed"]],
   ["isolated API/browser integration", process.execPath, [npmCli, "run", "test:integration"]],
+  [
+    "account recovery and independent restaurant",
+    process.execPath,
+    [npmCli, "run", "test:accounts"],
+  ],
 ];
 try {
   for (const [name, executable, args] of commands) {

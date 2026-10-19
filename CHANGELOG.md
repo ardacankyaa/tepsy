@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Login offers local owner recovery with expiring single-use proof and staff PIN guidance.
+- Owners can create independent restaurant installations without resetting existing data; instance cookies and configuration are isolated.
 - Report currency controls stay available across date changes, pending requests and load failures, including unknown historical currency.
 - Full backup settings distinguish loading, access denial and status errors, with safe retries that preserve completed operations and unsaved plans.
 - POS additions always create their own pending kitchen ticket with persisted retry keys; legacy unkeyed item additions are refused.

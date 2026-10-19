@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { credentialSessionVersion, sessionFromRequest } from "@/lib/auth-local";
 import { currentStaffSession } from "@/lib/security-policy.cjs";
-import { canRunSetup } from "@/lib/setup-policy.cjs";
+import { canRunSetup, isLoopbackAddress } from "@/lib/setup-policy.cjs";
 
 export async function GET(request) {
   const [config, staffCount] = await Promise.all([
@@ -57,6 +57,16 @@ export async function GET(request) {
     hasStaff: staffCount > 0,
     isSetupCompleted: Boolean(config?.isSetupCompleted),
     canSetup,
+    canRecoverOwner: Boolean(
+      config?.accessPasswordHash && isLoopbackAddress(request.headers.get("x-tepsy-client-ip"))
+    ),
+    canCreateRestaurant: Boolean(
+      config?.accessPasswordHash &&
+      config?.isSetupCompleted &&
+      config?.authEnabled &&
+      process.env.TEPSY_DEMO_MODE !== "1" &&
+      isLoopbackAddress(request.headers.get("x-tepsy-client-ip"))
+    ),
     session,
   });
 }

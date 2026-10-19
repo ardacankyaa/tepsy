@@ -2,7 +2,11 @@ const fs = require("node:fs"),
   path = require("node:path"),
   net = require("node:net");
 const { spawn, spawnSync } = require("node:child_process");
-const { managedPaths, managedEnvironment } = require("./local-paths.cjs");
+const {
+  managedPathsForSource,
+  managedEnvironment,
+  isManagedInstallation,
+} = require("./local-paths.cjs");
 const { releaseFiles, sourceHash } = require("./release-files.cjs");
 const { resolveRuntimeConfig } = require("./runtime-config.cjs");
 const {
@@ -66,12 +70,14 @@ function npmCli() {
 }
 function syncSource(app) {
   const relative = path.relative(source, app);
+  if (!relative && isManagedInstallation(app)) return;
   if (
     !relative ||
     (!relative.startsWith(".." + path.sep) &&
       relative !== ".." &&
       !path.isAbsolute(relative) &&
-      !relative.startsWith(".tepsy" + path.sep + "qa" + path.sep))
+      !relative.startsWith(".tepsy" + path.sep + "qa" + path.sep) &&
+      !/^\.tepsy\/restaurants\/[a-f0-9]{32}\/app$/.test(relative.replaceAll(path.sep, "/")))
   )
     throw new Error("The local application must be outside the source folder.");
   fs.mkdirSync(app, { recursive: true });
@@ -376,7 +382,7 @@ async function main() {
     known = ["setup", "start", "stop", "demo", "demo-stop", "paths"];
   if (!known.includes(command))
     throw new Error("Choose setup, start, stop, demo, demo-stop or paths.");
-  const paths = managedPaths(),
+  const paths = managedPathsForSource(source),
     mode = command.startsWith("demo") ? "demo" : "app",
     app = paths[mode];
   if (command === "paths") {

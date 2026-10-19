@@ -1,6 +1,7 @@
 "use client";
 
 import BrandLogo from "@/components/BrandLogo";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useApp } from "@/lib/AppContext";
 import { LegalLinks } from "@/components/ui/Workspace";
@@ -308,6 +309,23 @@ export default function LoginPage() {
               {error}
             </p>
           )}
+          <nav
+            aria-label={tr ? "Giriş yardımı" : "Sign-in help"}
+            className="mt-5 grid gap-2 border-t border-[var(--border)] pt-4 text-sm"
+          >
+            <Link
+              className="secondary-action flex min-h-11 items-center justify-center rounded-[var(--radius-control)] px-3 text-center"
+              href={`/account-help?action=recover${mode === "STAFF" ? "&role=staff" : ""}`}
+            >
+              {tr ? "Şifremi unuttum" : "Forgot password"}
+            </Link>
+            <Link
+              className="secondary-action flex min-h-11 items-center justify-center rounded-[var(--radius-control)] px-3 text-center"
+              href={status?.canSetup ? "/setup" : "/account-help?action=new"}
+            >
+              {tr ? "Yeni restoran oluştur" : "Create a new restaurant"}
+            </Link>
+          </nav>
           <LegalLinks />
           <p className="login-security-note">
             {tr

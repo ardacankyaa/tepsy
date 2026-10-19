@@ -99,6 +99,7 @@ function readCookie(cookieHeader, name) {
 function isPublicPath(pathname, config) {
   return (
     pathname === "/login" ||
+    pathname === "/account-help" ||
     isLegalPath(pathname) ||
     /^\/menu\/[^/]+$/.test(pathname) ||
     pathname === "/api/public/menu" ||

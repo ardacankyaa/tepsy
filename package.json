@@ -18,6 +18,7 @@
     "db:push": "prisma db push",
     "db:seed": "node prisma/seed.js",
     "db:backup": "node scripts/backup.cjs",
+    "owner:recovery": "node scripts/owner-recovery.cjs",
     "db:studio": "prisma studio",
     "format": "node scripts/format-source.cjs --write",
     "format:check": "node scripts/format-source.cjs --check",
@@ -27,7 +28,8 @@
     "demo": "node scripts/local-app.cjs demo",
     "demo:stop": "node scripts/local-app.cjs demo-stop",
     "local:paths": "node scripts/local-app.cjs paths",
-    "test:managed": "node tests/managed-demo.cjs"
+    "test:managed": "node tests/managed-demo.cjs",
+    "test:accounts": "node tests/account-help-integration.cjs"
   },
   "dependencies": {
     "@prisma/client": "^5.19.1",

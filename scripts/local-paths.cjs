@@ -1,5 +1,6 @@
 const path = require("node:path"),
-  os = require("node:os");
+  os = require("node:os"),
+  fs = require("node:fs");
 function managedPaths(env = process.env, platform = process.platform, home = os.homedir()) {
   const dataHome =
     env.TEPSY_LOCAL_DATA_HOME ||
@@ -35,4 +36,22 @@ function managedEnvironment(input, app, mode, port) {
     throw new Error("Port must be between 1 and 65535.");
   return env;
 }
-module.exports = { managedPaths, managedEnvironment };
+function isManagedInstallation(source) {
+  try {
+    const marker = JSON.parse(fs.readFileSync(path.join(source, ".managed-install.json"), "utf8"));
+    return Boolean(
+      ["app", "demo"].includes(marker.mode) &&
+      path.basename(source) === marker.mode &&
+      marker.files?.includes("server.js") &&
+      marker.files?.includes("package.json")
+    );
+  } catch {
+    return false;
+  }
+}
+function managedPathsForSource(source, env = process.env) {
+  if (!env.TEPSY_LOCAL_DATA_HOME && !env.RESTOPOS_LOCAL_DATA_HOME && isManagedInstallation(source))
+    return managedPaths({ ...env, TEPSY_LOCAL_DATA_HOME: path.dirname(source) });
+  return managedPaths(env);
+}
+module.exports = { managedPaths, managedEnvironment, managedPathsForSource, isManagedInstallation };

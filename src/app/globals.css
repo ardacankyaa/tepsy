@@ -1203,6 +1203,14 @@ html[data-theme="dark"] .table-node-selected .table-chair {
   width: 100%;
   max-width: 400px;
 }
+.account-help-page .login-access {
+  align-items: flex-start;
+  min-width: 0;
+}
+.account-help-page .login-access-card {
+  max-width: 560px;
+  padding-bottom: 24px;
+}
 .login-access-heading {
   margin-bottom: 28px;
 }

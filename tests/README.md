@@ -35,6 +35,7 @@ py -m unittest discover -s tests -p 'test_*.py'
 npm run build
 npm run test:managed
 npm run test:integration
+npm run test:accounts
 ```
 
 [Integration](integration/README.md) starts its own disposable production server/database and runs real API, auth, Socket.IO and browser flows, followed by all fixture groups. Never point tests at live restaurant data.
@@ -151,6 +152,15 @@ to current-currency collections in Turkish and English at 320px.
 status. It checks safe GET-only retries after offline/malformed/failed responses,
 preserved plan drafts, successful operations despite failed status refreshes, and
 Turkish/English phone layouts.
+
+`login-help` checks owner/staff recovery guidance, password confirmation, uncertain
+responses, separate-restaurant request retries and resume, unsafe URL rejection,
+and narrow/short phone layouts in Turkish and English.
+
+`test:accounts` runs a disposable parent installation and a real independent child.
+It checks local CLI recovery, changed credentials and expired sessions, single-use
+proof, idempotent child creation, fresh data/secrets/cookies, parent-data retention
+and child restart. Real restaurant credentials and databases are never targeted.
 
 The managed install also exercises two concurrent cold/warm launchers, legacy runtime metadata recovery, IPv6-only readiness and refusal to reuse another installation's occupied port. Fresh database schema/seed publication is staged; interrupted work does not replace an existing database. Unit tests cover lifecycle lock ownership and error-preserving cleanup.
 
