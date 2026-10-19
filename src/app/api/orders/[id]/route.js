@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
+import { recordAudit } from "@/lib/audit.mjs";
 import { sessionFromRequest } from "@/lib/auth-local";
 import {
   calculateItemsTotalCents,
@@ -37,6 +38,7 @@ function parseWorkflowError(error) {
     "partially-paid-order",
     "paid-order-cancellation",
     "approval-required",
+    "new-ticket-required",
   ].includes(error.code)
     ? 409
     : 400;
@@ -96,6 +98,7 @@ export async function PATCH(request, { params }) {
       });
       if (!order) throw new OrderRequestError(404, "order-not-found", "Sipariş bulunamadı.");
 
+      if (body?.addItems) await assertAuthorized(tx, request, { action: "addItems" });
       let action;
       try {
         action = validateOrderPatch(body, order);
@@ -282,6 +285,13 @@ export async function PATCH(request, { params }) {
             })
           )
         : null;
+      await recordAudit(tx, request, "ORDER_UPDATED", id, {
+        action: action.action,
+        itemId: action.itemId || null,
+        previousStatus: order.status,
+        status: updatedOrder.status,
+        total: updatedOrder.totalPrice,
+      });
       return {
         action,
         previousStatus: order.status,

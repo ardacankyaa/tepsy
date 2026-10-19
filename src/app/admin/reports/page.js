@@ -7,7 +7,17 @@ import { useApp } from "@/lib/AppContext";
 import { ArrowLeft, Printer, ShoppingBag, PieChart } from "lucide-react";
 
 export default function AdminReportsPage() {
-  const { t, formatPrice, lang, restaurantName } = useApp();
+  const { t, lang, restaurantName } = useApp();
+  const [reportCurrency, setReportCurrency] = useState("");
+  const formatPrice = (amount) => {
+    const number = Number(amount || 0).toLocaleString(lang === "tr" ? "tr-TR" : "en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    const unit =
+      reportData && Object.hasOwn(reportData, "currency") ? reportData.currency || "?" : "₺";
+    return `${number} ${unit}`;
+  };
   const [period, setPeriod] = useState("today");
   const [reportData, setReportData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -22,7 +32,9 @@ export default function AdminReportsPage() {
       setLoadError("");
       setReportData(null);
       try {
-        const res = await fetch(`/api/reports/z-report?period=${p}`);
+        const res = await fetch(
+          `/api/reports/z-report?period=${p}${reportCurrency ? "&currency=" + encodeURIComponent(reportCurrency) : ""}`
+        );
         if (!res.ok) throw new Error("report-unavailable");
         const data = await res.json();
         if (version !== requestVersion.current) return;
@@ -38,7 +50,7 @@ export default function AdminReportsPage() {
         if (version === requestVersion.current) setLoading(false);
       }
     },
-    [lang, period]
+    [lang, period, reportCurrency]
   );
 
   useEffect(() => {
@@ -116,6 +128,22 @@ export default function AdminReportsPage() {
             ))}
           </div>
 
+          {reportData?.availableCurrencies?.length > 1 && (
+            <label className="flex items-center gap-2 text-xs">
+              {lang === "tr" ? "Para birimi" : "Currency"}
+              <select
+                value={reportCurrency || reportData.currency || "unknown"}
+                onChange={(e) => setReportCurrency(e.target.value)}
+              >
+                {reportData.availableCurrencies.map((unit) => (
+                  <option key={unit || "unknown"} value={unit || "unknown"}>
+                    {unit ||
+                      (lang === "tr" ? "Bilinmeyen geçmiş birim" : "Unknown historical currency")}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <button
             onClick={printZReport}
             disabled={loading || Boolean(loadError) || !reportData}
@@ -154,6 +182,12 @@ export default function AdminReportsPage() {
         </div>
       </div>
 
+      {reportData?.summary?.refundTotal > 0 && (
+        <p className="px-3 py-2 text-xs" role="status">
+          {lang === "tr" ? "Cirodan düşülen iadeler: " : "Refunds deducted from collections: "}
+          {formatPrice(reportData.summary.refundTotal)}
+        </p>
+      )}
       {loadError && (
         <div
           role="alert"

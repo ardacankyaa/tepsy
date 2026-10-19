@@ -16,6 +16,8 @@ class MigrationTests(unittest.TestCase):
                 connection.executescript('''
                     CREATE TABLE "Order" (id TEXT PRIMARY KEY, status TEXT, totalPrice DECIMAL);
                     CREATE TABLE RestaurantConfig (id TEXT PRIMARY KEY, restaurantName TEXT);
+                    CREATE TABLE CashShift (id TEXT PRIMARY KEY, openingCash DECIMAL);
+                    INSERT INTO CashShift VALUES ('shift',100);
                     INSERT INTO RestaurantConfig VALUES ('config', 'Legacy Cafe');
                     CREATE TABLE Category (id TEXT PRIMARY KEY, name TEXT);
                     CREATE TABLE MenuItem (id TEXT PRIMARY KEY, name TEXT, categoryId TEXT);
@@ -33,6 +35,9 @@ class MigrationTests(unittest.TestCase):
             self.assertIsNone(migration.upgrade(database, root / "backups"))
             with closing(sqlite3.connect(database)) as connection:
                 self.assertEqual(connection.execute('SELECT restaurantName, restaurantLogoUrl FROM RestaurantConfig').fetchone(), ('Legacy Cafe', None))
+                self.assertEqual(connection.execute('SELECT openingCash,cashRefunds,cardRefunds,otherRefunds,refundsSnapshot FROM CashShift').fetchone(),(100,0,0,0,'[]'))
+                self.assertEqual(connection.execute('SELECT COUNT(*) FROM Refund').fetchone()[0],0)
+                self.assertEqual(connection.execute('SELECT COUNT(*) FROM AuditEvent').fetchone()[0],0)
                 self.assertEqual(connection.execute('SELECT status, totalPrice FROM "Order"').fetchone(), ('PAID', 45.5))
                 self.assertEqual(connection.execute('SELECT menuItemName, menuItemCategoryName, unitPrice FROM OrderItem').fetchone(), ('Çay', 'İçecekler', 45.5))
                 connection.execute('UPDATE "Order" SET idempotencyKey = ?', ('request-1',))

@@ -273,7 +273,10 @@ test("history matches zero-allocation snapshot orders, groups multi-order attemp
       timestamp: "2026-10-10T10:01:00.000Z",
     })
   );
-  const client = { $queryRawUnsafe: async (sql, ...args) => db.prepare(sql).all(...args) };
+  const client = {
+    refund: { findMany: async () => [] },
+    $queryRawUnsafe: async (sql, ...args) => db.prepare(sql).all(...args),
+  };
   const scope = new URL("http://local/api/pos/payments?tableId=t1&orderIds=o2&limit=1");
   const first = await listPaymentHistory(client, parsePaymentHistoryQuery(scope));
   assert.equal(first.payments.length, 1);
@@ -343,7 +346,10 @@ test("history groups TRY, USD and unknown legacy amounts separately without inve
       })
     );
   }
-  const client = { $queryRawUnsafe: async (sql, ...args) => db.prepare(sql).all(...args) };
+  const client = {
+    refund: { findMany: async () => [] },
+    $queryRawUnsafe: async (sql, ...args) => db.prepare(sql).all(...args),
+  };
   const result = await listPaymentHistory(
     client,
     parsePaymentHistoryQuery(new URL("http://local/api/pos/payments?tableId=t1"))

@@ -545,11 +545,12 @@ const COPY = {
     terminalWarning:
       "Bu adaptör yalnızca ağ bağlantısını kontrol eder; bankaya ödeme göndermez. Seçili olduğunda TEPSY kart ödemesini tamamlayamaz. Harici POS ile tahsilat için Manuel ödeme kaydını seçin.",
     testConnection: "Bağlantıyı test et",
-    backup: "Yerel yedek dışa aktarma",
-    backupHint: "Restoran, menü, masa, kroki, sipariş ve ödeme verilerini JSON olarak indirir.",
-    exportBackup: "Yedeği indir",
+    backup: "JSON veri dışa aktarımı",
+    backupHint:
+      "Verileri incelemek için JSON indirir. Tam kurtarma için Yedek ve geçmiş sekmesini kullanın.",
+    exportBackup: "JSON verilerini indir",
     exporting: "Hazırlanıyor…",
-    backupSaved: "Yerel yedek indirildi.",
+    backupSaved: "JSON verileri indirildi.",
     backupError: "Yerel yedek hazırlanamadı.",
     browserPrintOpened: "Tarayıcı test fişi yazdırma penceresi açıldı.",
     unavailable: "Kullanılamıyor",
@@ -672,11 +673,12 @@ const COPY = {
     terminalWarning:
       "This adapter checks network connectivity only; it does not submit bank payments. TEPSY cannot complete card payments while it is selected. Choose Manual payment record for payments collected on an external terminal.",
     testConnection: "Test connection",
-    backup: "Export local backup",
-    backupHint: "Downloads restaurant, menu, table, floor-plan, order and payment data as JSON.",
-    exportBackup: "Download backup",
+    backup: "Export JSON data",
+    backupHint:
+      "Downloads JSON data for inspection. Use the Backup & history tab for full recovery.",
+    exportBackup: "Download JSON data",
     exporting: "Preparing…",
-    backupSaved: "Local backup downloaded.",
+    backupSaved: "JSON data downloaded.",
     backupError: "Local backup could not be prepared.",
     browserPrintOpened: "The browser test-receipt print dialog was opened.",
     unavailable: "Unavailable",

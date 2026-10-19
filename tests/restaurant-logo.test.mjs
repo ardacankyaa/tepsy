@@ -47,6 +47,12 @@ test("config persists, broadcasts, retains, and clears optional restaurant logo"
   const api = await route("config", {
     NextResponse: { json },
     prisma: {
+      $transaction: async function (fn) {
+        return fn(this);
+      },
+      order: { count: async () => 0 },
+      payment: { count: async () => 0 },
+      cashShift: { count: async () => 0 },
       restaurantConfig: {
         findFirst: async () => config,
         update: async ({ data }) => (config = { ...config, ...data }),

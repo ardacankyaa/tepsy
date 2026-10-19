@@ -20,6 +20,15 @@ const publicConfig = ({ accessPasswordHash, ...config }) => ({
   hasAccessPassword: Boolean(accessPasswordHash),
 });
 
+async function currencyLocked(client) {
+  const counts = await Promise.all([
+    client.order.count(),
+    client.payment.count(),
+    client.cashShift.count(),
+  ]);
+  return counts.some((count) => count > 0);
+}
+
 export async function GET() {
   try {
     const config = await prisma.restaurantConfig.findFirst();
@@ -38,7 +47,10 @@ export async function GET() {
         hasAccessPassword: false,
       });
     }
-    return NextResponse.json(publicConfig(config));
+    return NextResponse.json({
+      ...publicConfig(config),
+      currencyLocked: await currencyLocked(prisma),
+    });
   } catch (error) {
     console.error("Config fetch error:", error);
     return NextResponse.json({ error: "Failed to fetch config" }, { status: 500 });
@@ -120,42 +132,54 @@ export async function PUT(request) {
     if (authEnabled !== undefined && typeof authEnabled !== "boolean") {
       return NextResponse.json({ error: "Giriş koruması ayarı geçersiz." }, { status: 400 });
     }
-    if (!config) {
-      config = await prisma.restaurantConfig.create({
-        data: {
-          restaurantName: String(restaurantName || "Restoranım").trim(),
-          restaurantLogoUrl: restaurantLogoUrl || null,
-          ownerName: String(ownerName || "")
-            .trim()
-            .slice(0, 100),
-          tagline: String(tagline || "")
-            .trim()
-            .slice(0, 180),
-          restaurantCode: normalizedCode || "TEPSY",
-          currency: currency || "₺",
-          defaultLanguage: defaultLanguage || "tr",
-          timeZone: timeZone || "Europe/Istanbul",
-          qrOrderEnabled: Boolean(qrOrderEnabled),
-          authEnabled: Boolean(authEnabled),
-        },
-      });
-    } else {
-      config = await prisma.restaurantConfig.update({
-        where: { id: config.id },
-        data: {
-          ...(restaurantName && { restaurantName: String(restaurantName).trim() }),
-          ...(restaurantLogoUrl !== undefined && { restaurantLogoUrl }),
-          ...(ownerName !== undefined && { ownerName: String(ownerName).trim().slice(0, 100) }),
-          ...(tagline !== undefined && { tagline: String(tagline).trim().slice(0, 180) }),
-          ...(normalizedCode && { restaurantCode: normalizedCode }),
-          ...(currency && { currency }),
-          ...(defaultLanguage && { defaultLanguage }),
-          ...(timeZone && { timeZone }),
-          ...(qrOrderEnabled !== undefined && { qrOrderEnabled }),
-          ...(authEnabled !== undefined && { authEnabled: Boolean(authEnabled) }),
-        },
-      });
-    }
+    config = await prisma.$transaction(async (tx) => {
+      const current = await tx.restaurantConfig.findFirst();
+      if (currency && currency !== current?.currency && (await currencyLocked(tx))) {
+        const error = new Error(
+          "Sipariş veya kasa hareketi başladıktan sonra para birimi değiştirilemez."
+        );
+        error.status = 409;
+        throw error;
+      }
+      config = current;
+      if (!config) {
+        config = await tx.restaurantConfig.create({
+          data: {
+            restaurantName: String(restaurantName || "Restoranım").trim(),
+            restaurantLogoUrl: restaurantLogoUrl || null,
+            ownerName: String(ownerName || "")
+              .trim()
+              .slice(0, 100),
+            tagline: String(tagline || "")
+              .trim()
+              .slice(0, 180),
+            restaurantCode: normalizedCode || "TEPSY",
+            currency: currency || "₺",
+            defaultLanguage: defaultLanguage || "tr",
+            timeZone: timeZone || "Europe/Istanbul",
+            qrOrderEnabled: Boolean(qrOrderEnabled),
+            authEnabled: Boolean(authEnabled),
+          },
+        });
+      } else {
+        config = await tx.restaurantConfig.update({
+          where: { id: config.id },
+          data: {
+            ...(restaurantName && { restaurantName: String(restaurantName).trim() }),
+            ...(restaurantLogoUrl !== undefined && { restaurantLogoUrl }),
+            ...(ownerName !== undefined && { ownerName: String(ownerName).trim().slice(0, 100) }),
+            ...(tagline !== undefined && { tagline: String(tagline).trim().slice(0, 180) }),
+            ...(normalizedCode && { restaurantCode: normalizedCode }),
+            ...(currency && { currency }),
+            ...(defaultLanguage && { defaultLanguage }),
+            ...(timeZone && { timeZone }),
+            ...(qrOrderEnabled !== undefined && { qrOrderEnabled }),
+            ...(authEnabled !== undefined && { authEnabled: Boolean(authEnabled) }),
+          },
+        });
+      }
+      return config;
+    });
 
     if (global.io) {
       global.io.emit("config:update", publicConfig(config));
@@ -165,9 +189,16 @@ export async function PUT(request) {
       disconnectAllSockets(global.io);
     }
 
-    return NextResponse.json(publicConfig(config));
+    return NextResponse.json({
+      ...publicConfig(config),
+      currencyLocked: await currencyLocked(prisma),
+    });
   } catch (error) {
-    if (error?.status === 400) return NextResponse.json({ error: error.message }, { status: 400 });
+    if ([400, 409].includes(error?.status))
+      return NextResponse.json(
+        { error: error.message, code: error.status === 409 ? "currency-locked" : "invalid-config" },
+        { status: error.status }
+      );
     if (error instanceof SyntaxError)
       return NextResponse.json({ error: "Geçersiz JSON." }, { status: 400 });
     console.error("Config update error:", error);

@@ -28,6 +28,8 @@ import {
   Zap,
 } from "lucide-react";
 import Link from "next/link";
+import RecoveryPanel from "@/components/RecoveryPanel";
+import AuditHistory from "@/components/AuditHistory";
 import RestaurantLogoField from "@/components/RestaurantLogoField";
 import { useApp } from "@/lib/AppContext";
 import { ScrollPanel, LegalLinks } from "@/components/ui/Workspace";
@@ -571,7 +573,15 @@ export default function SettingsPage() {
   useEffect(() => {
     const readHash = () => {
       const id = window.location.hash.slice(1);
-      if (["business-identity", "local-access", "staff-roles", "device-settings"].includes(id))
+      if (
+        [
+          "business-identity",
+          "local-access",
+          "staff-roles",
+          "device-settings",
+          "recovery-history",
+        ].includes(id)
+      )
         setActiveSection(id);
     };
     readHash();
@@ -698,6 +708,13 @@ export default function SettingsPage() {
             >
               {lang === "tr" ? "QR ve cihazlar" : "QR & devices"}
             </button>
+            <button
+              type="button"
+              aria-pressed={activeSection === "recovery-history"}
+              onClick={() => setActiveSection("recovery-history")}
+            >
+              {lang === "tr" ? "Yedek ve geçmiş" : "Backup & history"}
+            </button>
           </nav>
 
           <div className="settings-panels" data-section={activeSection}>
@@ -743,10 +760,20 @@ export default function SettingsPage() {
                     />
                   </Field>
                   <div className="grid grid-cols-2 gap-2">
-                    <Field label={c.currency}>
+                    <Field
+                      label={c.currency}
+                      hint={
+                        config.currencyLocked
+                          ? lang === "tr"
+                            ? "Sipariş veya kasa hareketinden sonra para birimi sabitlenir."
+                            : "Currency is fixed after orders or drawer activity."
+                          : undefined
+                      }
+                    >
                       <select
                         className={inputClass}
                         value={config.currency}
+                        disabled={config.currencyLocked}
                         onChange={(e) => setConfig({ ...config, currency: e.target.value })}
                       >
                         <option value="₺">₺ {c.turkishLira}</option>
@@ -829,7 +856,7 @@ export default function SettingsPage() {
                             restaurantCode: e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ""),
                           })
                         }
-                        placeholder="RESTO-01"
+                        placeholder="TEPSY-01"
                       />
                     </Field>
                     <label
@@ -1644,6 +1671,19 @@ export default function SettingsPage() {
                     {busy === "backup" ? c.exporting : c.exportBackup}
                   </button>
                 </div>
+              </Panel>
+              <Panel
+                id="recovery-history"
+                icon={Download}
+                title={lang === "tr" ? "Yedek ve işlem geçmişi" : "Backup and activity history"}
+                description={
+                  lang === "tr"
+                    ? "Kurtarma dosyaları, otomatik yedekler ve işlem kayıtları"
+                    : "Recovery files, scheduled backups and activity records"
+                }
+              >
+                <RecoveryPanel lang={lang} />
+                <AuditHistory lang={lang} />
               </Panel>
             </div>
           </div>

@@ -110,6 +110,7 @@ function paymentCreatedAt(payment) {
 export function calculateCashShiftClose({
   shift,
   payments,
+  refunds = [],
   closingCashCents,
   closedAt = new Date(),
 }) {
@@ -148,7 +149,24 @@ export function calculateCashShiftClose({
       return timeDelta || String(left.id).localeCompare(String(right.id));
     });
 
-  const expectedCashCents = addCents(openingCashCents, cashPaymentsCents, "Beklenen kasa nakdi");
+  const refundTotals = { CASH: 0, CREDIT_CARD: 0, OTHER: 0 };
+  for (const refund of refunds) {
+    const method =
+      refund.paymentMethod === "CASH"
+        ? "CASH"
+        : refund.paymentMethod === "CREDIT_CARD"
+          ? "CREDIT_CARD"
+          : "OTHER";
+    refundTotals[method] = addCents(
+      refundTotals[method],
+      exactMoneyCents(refund.amount),
+      "İade toplamı"
+    );
+  }
+  const expectedCashCents =
+    addCents(openingCashCents, cashPaymentsCents, "Beklenen kasa nakdi") - refundTotals.CASH;
+  if (expectedCashCents < 0)
+    throw new CashShiftError(409, "invalid-drawer", "Kasadaki kayıtlı nakit negatif olamaz.");
   const cashDifferenceCents = closingCashCents - expectedCashCents;
   if (
     !Number.isSafeInteger(cashDifferenceCents) ||
@@ -167,6 +185,13 @@ export function calculateCashShiftClose({
     cashDifference: centsToMoney(cashDifferenceCents),
     paymentCount: payments.length,
     paymentsSnapshot: snapshot,
+    cashRefunds: centsToMoney(refundTotals.CASH),
+    cardRefunds: centsToMoney(refundTotals.CREDIT_CARD),
+    otherRefunds: centsToMoney(refundTotals.OTHER),
+    refundsSnapshot: refunds.map((refund) => ({
+      ...refund,
+      amount: centsToMoney(exactMoneyCents(refund.amount)),
+    })),
     closedAt: closedAt.toISOString(),
   };
 }

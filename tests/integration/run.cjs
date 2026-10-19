@@ -2723,6 +2723,20 @@ async function main() {
     });
   });
 
+  await check("extra tickets, refunds, audit history and full recovery", async () => {
+    result.operations = await require("./operations.cjs").runOperationsChecks({
+      api,
+      expectStatus,
+      owner,
+      credentials,
+      base,
+      directory,
+      root,
+      env,
+      startServer,
+      stopServer,
+    });
+  });
   await check(
     browserGroups.length
       ? `fixture browser groups: ${browserGroups.join(", ")}`

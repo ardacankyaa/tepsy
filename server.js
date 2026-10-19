@@ -157,11 +157,13 @@ async function prepareDatabase() {
 let server = null;
 let io = null;
 let shutdownPromise = null;
+let stopRecoveryScheduler;
 
 async function shutdown(reason) {
   if (shutdownPromise) return shutdownPromise;
   shutdownPromise = (async () => {
     console.log(`Shutting down after ${reason}.`);
+    stopRecoveryScheduler?.();
     try {
       if (io) {
         await new Promise((resolve) => io.close(resolve));
@@ -195,6 +197,7 @@ async function startServer() {
   if (shutdownPromise) return;
 
   server = createServer(async (req, res) => {
+    let releaseWrite = () => {};
     try {
       if (!isAllowedRequestHost(req.headers.host, allowedHosts)) {
         res.statusCode = 421;
@@ -225,6 +228,31 @@ async function startServer() {
         res.setHeader("Content-Type", "application/json; charset=utf-8");
         res.end(JSON.stringify({ error: "Request origin could not be verified." }));
         return;
+      }
+      const backupManagement =
+        pathname === "/api/backup/recovery" &&
+        (requestUrl.searchParams.get("action") || "create") === "create";
+      if (isMutation && !backupManagement) {
+        if (globalThis.__tepsyRecoveryRunning) {
+          res.statusCode = 503;
+          res.setHeader("Content-Type", "application/json; charset=utf-8");
+          res.setHeader("Retry-After", "3");
+          res.end(
+            JSON.stringify({
+              error: "Yedekleme sürüyor; aynı isteği kısa süre sonra yeniden deneyin.",
+            })
+          );
+          return;
+        }
+        globalThis.__tepsyActiveWrites = (globalThis.__tepsyActiveWrites || 0) + 1;
+        let released = false;
+        releaseWrite = () => {
+          if (!released) {
+            released = true;
+            globalThis.__tepsyActiveWrites--;
+          }
+        };
+        res.once("finish", releaseWrite);
       }
       const config = await getAuthConfig();
       if (pathname === "/" && !config?.accessPasswordHash) {
@@ -300,6 +328,8 @@ async function startServer() {
       console.error("Request failed:", err);
       res.statusCode = 500;
       res.end("Internal Server Error");
+    } finally {
+      releaseWrite();
     }
   });
 
@@ -394,6 +424,7 @@ async function startServer() {
     server.listen(port, hostname);
   });
 
+  stopRecoveryScheduler = require("./src/lib/recovery.cjs").startRecoveryScheduler();
   const localIp = getLocalIpAddress();
   console.log(`\nTEPSY v1.0.0`);
   console.log(`  Local:  http://localhost:${port}`);

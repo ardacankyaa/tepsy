@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
+import { selectReportCurrency } from "@/lib/report-currency.mjs";
 import { centsToMoney, moneyToCents } from "@/lib/finance.mjs";
 import { aggregateCollections, aggregateProductSales } from "@/lib/z-report-finance.mjs";
 import {
@@ -31,7 +32,9 @@ export async function GET(request) {
     const period = searchParams.get("period") || "today";
     const startDateParam = searchParams.get("startDate");
     const endDateParam = searchParams.get("endDate");
-    const config = await prisma.restaurantConfig.findFirst({ select: { timeZone: true } });
+    const config = await prisma.restaurantConfig.findFirst({
+      select: { timeZone: true, currency: true },
+    });
     const timeZone = config?.timeZone || BUSINESS_TIME_ZONE;
     const { start, end } = resolveReportPeriod({
       period,
@@ -40,7 +43,7 @@ export async function GET(request) {
       timeZone,
     });
 
-    const [payments, orders] = await Promise.all([
+    const [allPayments, allOrders, allRefunds] = await Promise.all([
       prisma.payment.findMany({
         where: { createdAt: { gte: start, lte: end } },
         include: { order: { include: { table: true } } },
@@ -52,6 +55,7 @@ export async function GET(request) {
           status: { notIn: ["CANCELLED", "AWAITING_WAITER_APPROVAL"] },
         },
         include: {
+          payments: true,
           items: {
             include: {
               menuItem: { include: { category: true } },
@@ -60,8 +64,34 @@ export async function GET(request) {
         },
         orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       }),
+      prisma.refund.findMany({
+        where: { createdAt: { gte: start, lte: end } },
+        orderBy: { createdAt: "desc" },
+      }),
     ]);
 
+    const keys = [
+      ...new Set(
+        [...allPayments, ...allOrders.flatMap((o) => o.payments)]
+          .map((p) => p.idempotencyKey)
+          .filter(Boolean)
+      ),
+    ];
+    const attempts = await prisma.paymentAttempt.findMany({
+      where: { idempotencyKey: { in: keys } },
+    });
+    const { payments, orders, refunds, currency, availableCurrencies } = selectReportCurrency({
+      payments: allPayments,
+      orders: allOrders,
+      refunds: allRefunds,
+      attempts,
+      currentCurrency: config?.currency || "₺",
+      requested: searchParams.get("currency"),
+    });
+    const refundCents = (method) =>
+      refunds
+        .filter((r) => !method || r.paymentMethod === method)
+        .reduce((n, r) => n + moneyToCents(r.amount), 0);
     const collectionSummary = aggregateCollections(payments);
     const productSummary = aggregateProductSales(orders);
     const averageOrderValueCents = collectionSummary.averageOrderValueCents;
@@ -70,6 +100,8 @@ export async function GET(request) {
 
     return NextResponse.json({
       period,
+      currency,
+      availableCurrencies,
       startDate: start.toISOString(),
       endDate: end.toISOString(),
       basis: {
@@ -78,10 +110,12 @@ export async function GET(request) {
         timeZone,
       },
       summary: {
-        totalRevenue: moneyNumber(collectionSummary.totalRevenueCents),
-        cashRevenue: moneyNumber(collectionSummary.cashRevenueCents),
-        cardRevenue: moneyNumber(collectionSummary.cardRevenueCents),
-        otherRevenue: moneyNumber(collectionSummary.otherRevenueCents),
+        totalRevenue: moneyNumber(collectionSummary.totalRevenueCents - refundCents()),
+        grossCollections: moneyNumber(collectionSummary.totalRevenueCents),
+        refundTotal: moneyNumber(refundCents()),
+        cashRevenue: moneyNumber(collectionSummary.cashRevenueCents - refundCents("CASH")),
+        cardRevenue: moneyNumber(collectionSummary.cardRevenueCents - refundCents("CREDIT_CARD")),
+        otherRevenue: moneyNumber(collectionSummary.otherRevenueCents - refundCents("OTHER")),
         totalOrdersCount: collectionSummary.totalOrdersCount,
         averageOrderValue: moneyNumber(averageOrderValueCents),
         salesOrdersCount: productSummary.ordersCount,
@@ -90,6 +124,7 @@ export async function GET(request) {
         netProductSales: moneyNumber(productSummary.netSalesCents),
         inconsistentProductOrderCount: productSummary.inconsistentOrdersCount,
       },
+      refunds: refunds.map(({ responseJson, requestFingerprint, idempotencyKey, ...row }) => row),
       topProducts,
       categoryBreakdown,
       transactions: payments.map((payment) => ({

@@ -12,6 +12,28 @@ import sqlite3
 
 
 ADDITIONS = {"Order": ("idempotencyKey", "requestFingerprint"), "OrderItem": ("menuItemName", "menuItemCategoryName"), "RestaurantConfig": ("restaurantLogoUrl",)}
+SHIFT_ADDITIONS = {"cashRefunds": "DECIMAL NOT NULL DEFAULT 0", "cardRefunds": "DECIMAL NOT NULL DEFAULT 0", "otherRefunds": "DECIMAL NOT NULL DEFAULT 0", "refundsSnapshot": "TEXT NOT NULL DEFAULT '[]'"}
+NEW_TABLES = '''
+CREATE TABLE IF NOT EXISTS "Refund" (
+  "id" TEXT NOT NULL PRIMARY KEY, "paymentId" TEXT NOT NULL,
+  "cashShiftId" TEXT NOT NULL, "amount" DECIMAL NOT NULL,
+  "paymentMethod" TEXT NOT NULL, "currency" TEXT NOT NULL,
+  "reason" TEXT NOT NULL, "actorId" TEXT NOT NULL, "actorName" TEXT NOT NULL,
+  "idempotencyKey" TEXT NOT NULL, "requestFingerprint" TEXT NOT NULL,
+  "responseJson" TEXT NOT NULL, "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE UNIQUE INDEX IF NOT EXISTS "Refund_idempotencyKey_key" ON "Refund"("idempotencyKey");
+CREATE INDEX IF NOT EXISTS "Refund_paymentId_createdAt_idx" ON "Refund"("paymentId", "createdAt");
+CREATE INDEX IF NOT EXISTS "Refund_cashShiftId_idx" ON "Refund"("cashShiftId");
+CREATE INDEX IF NOT EXISTS "Refund_createdAt_idx" ON "Refund"("createdAt");
+CREATE TABLE IF NOT EXISTS "AuditEvent" (
+  "id" TEXT NOT NULL PRIMARY KEY, "actorId" TEXT NOT NULL, "actorName" TEXT NOT NULL,
+  "action" TEXT NOT NULL, "entityId" TEXT NOT NULL, "detailsJson" TEXT NOT NULL,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS "AuditEvent_createdAt_id_idx" ON "AuditEvent"("createdAt", "id");
+CREATE INDEX IF NOT EXISTS "AuditEvent_entityId_idx" ON "AuditEvent"("entityId");
+'''
 
 
 def columns(connection, table):
@@ -22,6 +44,11 @@ def needs_upgrade(database):
     if not database.is_file():
         raise FileNotFoundError(f"Database missing: {database}. Run SETUP.bat first.")
     with closing(sqlite3.connect(database.resolve().as_uri() + "?mode=ro", uri=True)) as connection:
+        if not columns(connection, "Refund") or not columns(connection, "AuditEvent"):
+            return True
+        shift_columns = columns(connection, "CashShift")
+        if shift_columns and not set(SHIFT_ADDITIONS).issubset(shift_columns):
+            return True
         for table, fields in ADDITIONS.items():
             existing = columns(connection, table)
             if not existing:
@@ -46,6 +73,14 @@ def upgrade(database, backup_directory):
         connection.execute("PRAGMA foreign_keys = ON")
         connection.execute("BEGIN IMMEDIATE")
         try:
+            for statement in NEW_TABLES.split(";"):
+                if statement.strip():
+                    connection.execute(statement)
+            shift_columns = columns(connection, "CashShift")
+            if shift_columns:
+                for field, declaration in SHIFT_ADDITIONS.items():
+                    if field not in shift_columns:
+                        connection.execute(f'ALTER TABLE "CashShift" ADD COLUMN "{field}" {declaration}')
             for table, fields in ADDITIONS.items():
                 existing = columns(connection, table)
                 for field in fields:

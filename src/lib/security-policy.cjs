@@ -9,6 +9,8 @@ function decodeCookieValue(value) {
 }
 
 function allowedRolesForPath(pathname, method = "GET") {
+  if (pathname.startsWith("/api/audit") || pathname.startsWith("/api/pos/refunds"))
+    return ["ADMIN"];
   if (pathname === "/") return ["ADMIN"];
   if (pathname === "/admin/reports" && method === "GET") return ["ADMIN", "CASHIER"];
   if (pathname.startsWith("/admin")) return ["ADMIN"];

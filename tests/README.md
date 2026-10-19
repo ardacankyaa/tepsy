@@ -123,6 +123,20 @@ closing snapshots.
 
 ## Managed local install
 
+Operations regressions additionally cover new POS tickets on delivered accounts,
+real lost-response retries without duplicates, financial currency locking,
+historical currency separation, administrator-only partial refunds, concurrent
+and replayed refund attempts, preserved original receipts, audited actors, cash
+drawer reconciliation, desktop/mobile recovery controls and a real ZIP recovery
+roundtrip. Due automatic backups must resume after restart and verify the second
+copy. All records live in the integration runner's disposable installation.
+
+`config-currency`, `extra-order`, `refund-shift`, `refunds` and `report-currency`
+cover the corresponding business rules. Python `test_recovery.py` checks the
+archive inventory and actual restored data, missing/corrupt payloads, path traversal
+and refusal to overwrite existing installations. Migration tests preserve legacy
+order and shift records while adding refund/audit tables and closing snapshots.
+
 `npm run test:managed` creates a fresh demo installation under a disposable `.tepsy/qa/managed-demo-*` directory. It verifies dependency installation, schema and seed, production build/start, owner/staff login, demo cookie isolation for HTTP and Socket.IO, guest QR access, restart without reseeding or rebuilding, retained owner session and owned process shutdown. It also checks a fresh real installation with the default database after relocating the build: no demo data and a working login/setup entry. Logs and `results.json` stay in that QA directory. CI runs this check on Windows and Ubuntu.
 
 `realtime-recovery` uses the actual Socket.IO client against an intercepted synthetic Engine.IO peer. It checks missed kitchen orders after reconnect, delayed disconnect warnings, shared cash-shift open/close events, reconnect refresh and recovery from a shift conflict. API writes remain intercepted.

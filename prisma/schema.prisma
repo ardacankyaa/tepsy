@@ -137,6 +137,10 @@ model CashShift {
   otherPayments      Decimal   @default(0)
   paymentCount       Int       @default(0)
   paymentsSnapshot   String    @default("[]")
+  cashRefunds        Decimal   @default(0)
+  cardRefunds        Decimal   @default(0)
+  otherRefunds       Decimal   @default(0)
+  refundsSnapshot    String    @default("[]")
   openingNote        String?
   closingNote        String?
   openedById         String?
@@ -155,6 +159,39 @@ model PaymentAttempt {
   requestFingerprint String
   responseJson       String
   createdAt          DateTime @default(now())
+}
+
+model Refund {
+  id                 String   @id @default(cuid())
+  paymentId          String
+  cashShiftId        String
+  amount             Decimal
+  paymentMethod      String
+  currency           String
+  reason             String
+  actorId            String
+  actorName          String
+  idempotencyKey     String   @unique
+  requestFingerprint String
+  responseJson       String
+  createdAt          DateTime @default(now())
+
+  @@index([paymentId, createdAt])
+  @@index([cashShiftId])
+  @@index([createdAt])
+}
+
+model AuditEvent {
+  id          String   @id @default(cuid())
+  actorId     String
+  actorName   String
+  action      String
+  entityId    String
+  detailsJson String
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt, id])
+  @@index([entityId])
 }
 
 // 7. Restoran Yapılandırması

@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
+import { recordAudit } from "@/lib/audit.mjs";
 import { orderListPage } from "@/lib/order-list-query.cjs";
 import { normalizeOrderRequest } from "@/lib/order-input.mjs";
 import {
@@ -163,6 +164,14 @@ export async function POST(req) {
           );
         }
 
+        await recordAudit(tx, req, "ORDER_CREATED", order.id, {
+          tableId: input.tableId,
+          total: order.totalPrice,
+          items: orderItemsData.map((item) => ({
+            name: item.menuItemName,
+            quantity: item.quantity,
+          })),
+        });
         return { order, created: true, tableStatus };
       });
 

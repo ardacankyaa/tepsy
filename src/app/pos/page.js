@@ -535,111 +535,24 @@ export default function PosPage() {
       return;
     }
     const tableAtAdd = selectedTable;
-    const ordersAtAdd = tableAtAdd.orders || [];
-    const createsOrder = ordersAtAdd.length === 0;
-    const attempt = createsOrder
-      ? restoreOrCreateOrderAttempt(
-          `tepsy:order-attempt:pos:${tableAtAdd.id}`,
-          {
-            tableId: tableAtAdd.id,
-            items: [{ menuItemId: menuItem.id, quantity: 1 }],
-          },
-          "tableId",
-          tableAtAdd.id
-        )
-      : null;
-    if (createsOrder && !attempt) {
+    const attempt = restoreOrCreateOrderAttempt(
+      `tepsy:order-attempt:pos:${tableAtAdd.id}`,
+      { tableId: tableAtAdd.id, items: [{ menuItemId: menuItem.id, quantity: 1 }] },
+      "tableId",
+      tableAtAdd.id
+    );
+    if (!attempt) {
       setItemActionError(
         lang === "en"
-          ? "The browser could not save a safe retry. Enable browser session storage and try again."
-          : "Tarayıcı güvenli yeniden deneme için oturum bilgisini kaydedemedi. Depolamayı etkinleştirip yeniden deneyin."
+          ? "The browser could not save a safe retry. Enable session storage and try again."
+          : "Tarayıcı güvenli yeniden deneme bilgisini kaydedemedi. Depolamayı etkinleştirin."
       );
       return;
     }
-    if (attempt) {
-      posOrderAttemptRef.current = attempt;
-      setPosOrderAttempt(attempt);
-    }
-    const newItem = {
-      id: `temp-${Date.now()}`,
-      orderId: ordersAtAdd[0]?.id,
-      quantity: 1,
-      unitPrice: menuItem.price,
-      menuItem: { name: menuItem.name, price: menuItem.price },
-    };
-
-    setIsAddingItem(true);
-    setItemActionError("");
-    setSelectedTable((previous) => {
-      if (!previous || previous.id !== tableAtAdd.id) return previous;
-      if (!createsOrder) {
-        const firstOrder = {
-          ...ordersAtAdd[0],
-          items: [...(ordersAtAdd[0].items || []), newItem],
-          totalPrice: Number(ordersAtAdd[0].totalPrice || 0) + Number(menuItem.price || 0),
-        };
-        return { ...previous, status: "OCCUPIED", orders: [firstOrder, ...ordersAtAdd.slice(1)] };
-      }
-      const newOrder = {
-        id: `temp-order-${Date.now()}`,
-        status: "PENDING",
-        totalPrice: menuItem.price,
-        items: [newItem],
-      };
-      return { ...previous, status: "OCCUPIED", orders: [newOrder] };
-    });
+    posOrderAttemptRef.current = attempt;
+    setPosOrderAttempt(attempt);
     setShowAddMenuModal(false);
-
-    try {
-      const response = createsOrder
-        ? await fetch("/api/orders", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: attempt.body,
-          })
-        : await fetch(`/api/orders/${ordersAtAdd[0].id}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ addItems: [{ menuItemId: menuItem.id, quantity: 1 }] }),
-          });
-      if (!response.ok) {
-        const result = await response.json().catch(() => null);
-        if (createsOrder && isDefinitiveOrderRejection(response.status)) {
-          clearOrderAttempt(`tepsy:order-attempt:pos:${tableAtAdd.id}`);
-          posOrderAttemptRef.current = null;
-          setPosOrderAttempt(null);
-        }
-        throw new Error(
-          result?.error ||
-            (lang === "en"
-              ? "Item could not be added to the account."
-              : "Ürün adisyona eklenemedi.")
-        );
-      }
-      if (createsOrder) {
-        clearOrderAttempt(`tepsy:order-attempt:pos:${tableAtAdd.id}`);
-        posOrderAttemptRef.current = null;
-        setPosOrderAttempt(null);
-      }
-      await fetchTables();
-    } catch (error) {
-      console.error("Ürün adisyona eklenemedi:", error);
-      await fetchTables();
-      setItemActionError(
-        createsOrder && posOrderAttemptRef.current
-          ? lang === "en"
-            ? "The order result is uncertain. Retry this same item before adding anything else."
-            : "Sipariş sonucu belirsiz. Başka ürün eklemeden önce aynı isteği yeniden deneyin."
-          : error instanceof TypeError
-            ? lang === "en"
-              ? "The item could not be confirmed. The table was refreshed; check the account before adding it again."
-              : "Ürün ekleme doğrulanamadı. Masa yenilendi; yeniden eklemeden önce hesabı kontrol edin."
-            : error.message ||
-              (lang === "en" ? "Item could not be added." : "Ürün adisyona eklenemedi.")
-      );
-    } finally {
-      setIsAddingItem(false);
-    }
+    await retryPendingPosOrder();
   };
 
   const handleCancelItem = (orderId, itemId) => {
@@ -1090,6 +1003,14 @@ export default function PosPage() {
                 <dd>{formatPrice(closedShiftSummary.cashPayments)}</dd>
               </div>
               <div>
+                <dt>{lang === "en" ? "Cash refunds" : "Nakit iadeler"}</dt>
+                <dd>{formatPrice(closedShiftSummary.cashRefunds || 0)}</dd>
+              </div>
+              <div>
+                <dt>{lang === "en" ? "Card refunds" : "Kart iadeler"}</dt>
+                <dd>{formatPrice(closedShiftSummary.cardRefunds || 0)}</dd>
+              </div>
+              <div>
                 <dt>{lang === "en" ? "Card payments" : "Kart tahsilatı"}</dt>
                 <dd>{formatPrice(closedShiftSummary.cardPayments)}</dd>
               </div>
@@ -1130,6 +1051,7 @@ export default function PosPage() {
         <label className="pos-history-filter">
           {lang === "tr" ? "Masa filtresi" : "Filter by table"}
           <select
+            aria-label={lang === "tr" ? "Masa filtresi" : "Filter by table"}
             value={historyTableId}
             onChange={(event) => setHistoryTableId(event.target.value)}
           >

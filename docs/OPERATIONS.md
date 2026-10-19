@@ -122,6 +122,71 @@ python3 scripts/sqlite-restore.py --backup <file> --target <new.db>  # Restore
   auto-generated `session-secret` file) before starting; this signs out all devices
   and prevents previously logged-out cookies from becoming usable again.
 
-## Reset
+## Recovery and financial corrections
+
+### Full recovery backups
+
+Settings → **Backup & history** (Turkish: **Yedek ve geçmiş**) provides full ZIP
+backups, verification uploads, automatic backup plans and activity history. Full
+backup management requires the owner on the server computer. JSON export remains
+available for inspecting data; it is not a standalone recovery archive.
+
+The ZIP contains a consistent SQLite copy (including shifts, immutable receipts,
+refunds, audit events and floor-plan dimensions), uploaded photos, device settings
+and existing terminal-transfer/session-revocation stores. SHA-256 inventory,
+SQLite integrity and foreign keys are checked before success. New mutations are
+briefly refused with HTTP 503 while existing writes drain and the snapshot is
+created; retry the same keyed order/payment request. Reads remain available.
+
+The archive contains private restaurant data and credential hashes. Keep it
+private. Raw `.env` integration credentials and session signing secrets are not
+exported. Preserve integration credentials separately in secure storage and
+reconfigure them when recovering. New installation sessions require a new login.
+
+Automatic full backups are opt-in and run while TEPSY is running. Choose an
+interval of 1–168 hours (default 24) and, optionally, a different absolute folder
+for a second copy. Both copies are verified; copy failures are shown separately
+from a successful local backup. An overdue plan resumes on startup, with a
+15-minute failure retry delay. The latest 30 local recovery ZIPs are retained;
+external copies are never automatically deleted. For protection from disk failure,
+choose a second location on a different physical disk or managed external storage.
+
+Restore only into a **new** private installation folder. Existing installations
+are never overwritten:
+
+```powershell
+py scripts/recovery-bundle.py verify --archive "D:/Backups/tepsy-recovery.zip"
+py scripts/recovery-bundle.py restore --archive "D:/Backups/tepsy-recovery.zip" --target "C:/TEPSY-recovered/app"
+```
+
+On macOS/Linux use `python3`. Stop the old instance, set `TEPSY_LOCAL_DATA_HOME` to
+the new parent folder (here `C:/TEPSY-recovered`) and run `npm run start:local`
+from the source project. The launcher installs code/dependencies alongside the
+restored data and applies verified additive upgrades. Sign in again and check
+photos, receipts, device settings and reports before switching devices to it.
+Do not copy the old session signing secret; the new one invalidates old cookies.
+Restored device addresses may need adjustment on another network.
+
+### Refunds and corrections
+
+POS → Payment history → **Refund / correction** records an externally completed
+refund. Administrators only; an open cash shift, a reason and explicit external
+confirmation are required. Amounts cannot exceed the unrefunded receipt balance.
+Cash refunds also require sufficient recorded drawer cash. Original receipts are
+immutable, paid orders remain closed, and refunds have their own actor/date/reason.
+If the result is uncertain, reopen the same receipt and retry the saved request;
+never execute the external refund a second time. Current and historical currencies
+must match the cash drawer; unknown legacy currency requires manual reconciliation.
+
+### Business currency
+
+Choose currency before creating orders or opening the first shift. Financial
+activity permanently locks the currency for that installation, including closed
+history, to avoid reinterpreting existing prices. Reports separate historical
+currencies without conversion; unknown legacy amounts have an explicit separate
+selection. Refunds reduce net collections by recording date, while product
+quantity breakdowns continue to describe original order-date sales.
+
+### Protected reset
 
 Management → Reset (server computer only). Requires typing `TEPSY`. Creates a verified backup before clearing all data.

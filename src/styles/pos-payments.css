@@ -152,7 +152,7 @@
 }
 .pos-payment-entry {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto 44px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 8px;
   align-items: center;
   padding: 9px 0;
@@ -668,5 +668,19 @@
   }
   .operations-pos .pos-payment-breakdown .pos-remaining-row dd {
     font-size: 26px;
+  }
+}
+
+.pos-payment-entry .pos-history-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 140px;
+  justify-content: flex-end;
+}
+@media (max-width: 480px) {
+  .pos-payment-entry .pos-history-actions {
+    grid-column: 1 / -1;
+    max-width: none;
   }
 }

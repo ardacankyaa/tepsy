@@ -61,6 +61,9 @@ function serializeShift(shift) {
     cashPayments: centsToMoney(moneyToCents(shift.cashPayments)),
     cardPayments: centsToMoney(moneyToCents(shift.cardPayments)),
     otherPayments: centsToMoney(moneyToCents(shift.otherPayments)),
+    cashRefunds: centsToMoney(moneyToCents(shift.cashRefunds ?? "0")),
+    cardRefunds: centsToMoney(moneyToCents(shift.cardRefunds ?? "0")),
+    otherRefunds: centsToMoney(moneyToCents(shift.otherRefunds ?? "0")),
     paymentCount: shift.paymentCount,
     openingNote: shift.openingNote,
     closingNote: shift.closingNote,
@@ -88,11 +91,15 @@ function summarizeClosedShift(shift) {
     cashPayments: centsToMoney(moneyToCents(shift.cashPayments)),
     cardPayments: centsToMoney(moneyToCents(shift.cardPayments)),
     otherPayments: centsToMoney(moneyToCents(shift.otherPayments)),
+    cashRefunds: centsToMoney(moneyToCents(shift.cashRefunds ?? "0")),
+    cardRefunds: centsToMoney(moneyToCents(shift.cardRefunds ?? "0")),
+    otherRefunds: centsToMoney(moneyToCents(shift.otherRefunds ?? "0")),
     expectedCash: optionalMoney(shift.expectedCash),
     closingCash: optionalMoney(shift.closingCash),
     cashDifference: optionalCashDifference(shift.cashDifference),
     paymentCount: shift.paymentCount,
     paymentsSnapshot,
+    refundsSnapshot: JSON.parse(shift.refundsSnapshot || "[]"),
     timestamp: shift.closedAt,
   };
 }
@@ -220,7 +227,19 @@ export async function PATCH(request) {
         orderBy: [{ createdAt: "asc" }, { id: "asc" }],
         select: { id: true, orderId: true, paymentMethod: true, amountPaid: true, createdAt: true },
       });
+      const refunds = await tx.refund.findMany({
+        where: { cashShiftId: requestedShift.id },
+        select: {
+          id: true,
+          paymentId: true,
+          amount: true,
+          paymentMethod: true,
+          reason: true,
+          createdAt: true,
+        },
+      });
       const summary = calculateCashShiftClose({
+        refunds,
         shift: requestedShift,
         payments,
         closingCashCents: input.closingCashCents,
@@ -239,6 +258,10 @@ export async function PATCH(request) {
           otherPayments: summary.otherPayments,
           paymentCount: summary.paymentCount,
           paymentsSnapshot: JSON.stringify(summary.paymentsSnapshot),
+          cashRefunds: summary.cashRefunds,
+          cardRefunds: summary.cardRefunds,
+          otherRefunds: summary.otherRefunds,
+          refundsSnapshot: JSON.stringify(summary.refundsSnapshot),
           closingNote: input.closingNote,
           closedById: actor?.userId || null,
           closedAt: summary.closedAt,

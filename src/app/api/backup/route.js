@@ -5,7 +5,19 @@ import prisma from "@/lib/db";
 
 export async function GET() {
   try {
-    const [config, tables, categories, orders, floorElements, staff] = await Promise.all([
+    const [
+      config,
+      tables,
+      categories,
+      orders,
+      floorElements,
+      staff,
+      cashShifts,
+      paymentAttempts,
+      floorPlanSections,
+      refunds,
+      activity,
+    ] = await Promise.all([
       prisma.restaurantConfig.findFirst({
         select: {
           restaurantName: true,
@@ -15,6 +27,8 @@ export async function GET() {
           tagline: true,
           currency: true,
           defaultLanguage: true,
+          timeZone: true,
+          qrOrderEnabled: true,
           authEnabled: true,
           isSetupCompleted: true,
           createdAt: true,
@@ -45,6 +59,11 @@ export async function GET() {
           updatedAt: true,
         },
       }),
+      prisma.cashShift.findMany(),
+      prisma.paymentAttempt.findMany(),
+      prisma.floorPlanSection.findMany(),
+      prisma.refund.findMany(),
+      prisma.auditEvent.findMany(),
     ]);
 
     const exportedAt = new Date().toISOString();
@@ -52,7 +71,8 @@ export async function GET() {
     return NextResponse.json(
       {
         format: "tepsy-local-backup",
-        version: 1,
+        version: 2,
+        completeRecovery: false,
         exportedAt,
         config,
         tables,
@@ -60,6 +80,11 @@ export async function GET() {
         orders,
         floorElements,
         staff,
+        cashShifts,
+        paymentAttempts,
+        floorPlanSections,
+        refunds,
+        activity,
       },
       {
         headers: {

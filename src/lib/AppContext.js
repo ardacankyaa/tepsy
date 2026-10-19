@@ -12,6 +12,7 @@ export function AppProvider({ children, initialLang = "tr" }) {
   const pathname = usePathname();
   const [lang, setLangState] = useState(initialLang === "en" ? "en" : "tr");
   const [currency, setCurrencyState] = useState("₺");
+  const [currencyLocked, setCurrencyLocked] = useState(false);
   const [currencySaving, setCurrencySaving] = useState(false);
   const [currencyError, setCurrencyError] = useState("");
   const currencySavePending = useRef(false);
@@ -55,6 +56,7 @@ export function AppProvider({ children, initialLang = "tr" }) {
         const data = await res.json();
         if (controller.signal.aborted || requestVersion !== configRequestVersion.current) return;
 
+        setCurrencyLocked(Boolean(data.currencyLocked));
         if (data.currency) {
           setCurrencyState(data.currency);
           localStorage.setItem("tepsy_curr", data.currency);
@@ -109,7 +111,7 @@ export function AppProvider({ children, initialLang = "tr" }) {
   };
 
   const setCurrency = async (newCurr) => {
-    if (currencySavePending.current) return false;
+    if (currencySavePending.current || currencyLocked) return false;
     currencySavePending.current = true;
     configRequestVersion.current += 1;
     setCurrencySaving(true);
@@ -135,6 +137,7 @@ export function AppProvider({ children, initialLang = "tr" }) {
   };
 
   const applyConfig = (config) => {
+    if (config.currencyLocked !== undefined) setCurrencyLocked(Boolean(config.currencyLocked));
     if (config.defaultLanguage) setLang(config.defaultLanguage);
     if (config.currency) {
       setCurrencyState(config.currency);
@@ -173,6 +176,7 @@ export function AppProvider({ children, initialLang = "tr" }) {
         currency,
         setCurrency,
         currencySaving,
+        currencyLocked,
         currencyError,
         applyConfig,
         restaurantName,

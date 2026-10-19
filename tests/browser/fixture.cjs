@@ -161,6 +161,13 @@ async function createFixture(options = {}) {
     else if (path === "/api/devices")
       data = { printer: { type: "BROWSER" }, paymentTerminal: { type: "MANUAL" }, network: {} };
     else if (path === "/api/network-info") data = { baseUrl: "http://192.168.1.20:3000" };
+    else if (path === "/api/backup/recovery")
+      data = {
+        plan: { enabled: false, intervalHours: 24, copyDirectory: "" },
+        status: null,
+        running: false,
+      };
+    else if (path === "/api/audit") data = { events: [], nextCursor: null };
     else if (path === "/api/public/menu")
       data = {
         restaurant: { name: "Test Restoranı", currency: "₺", defaultLanguage: "tr" },

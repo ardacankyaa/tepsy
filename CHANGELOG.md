@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- POS additions always create their own pending kitchen ticket with persisted retry keys; legacy unkeyed item additions are refused.
+- Currency is fixed after the first order or drawer activity. Historical report currencies are separated, including unknown legacy amounts.
+- Administrator-only, externally confirmed refunds retain original receipts, enforce remaining refundable amounts and reconcile cash drawers and net collections.
+- Critical order, cancellation, payment, discount and refund actions retain an actor and timestamp in the activity history.
+- Owner-only full recovery ZIPs include financial history, images and device state, with checksum/integrity verification and restore into new folders only.
+- Backup/history settings show scheduled backup results, failures and verified second copies. Existing JSON downloads are labelled as data exports.
 - Backups follow active installation environment and explicit source/destination options on all supported platforms.
 - Daily backup schedules honor custom backup directories; legacy paths remain supported.
 - Formatting is confined to publishable source and never traverses runtime/QA data.

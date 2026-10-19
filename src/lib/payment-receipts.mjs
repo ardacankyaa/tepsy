@@ -348,8 +348,33 @@ export async function listPaymentHistory(client, parsed) {
       payments: [{ amountPaid: centsToMoney(databaseCents(order.paidCents)) }],
     })
   );
+  const entries = selected.map(publicHistoryEntry);
+  const refunds = entries.length
+    ? await client.refund.findMany({
+        where: { paymentId: { in: entries.map((e) => e.id) } },
+        select: {
+          id: true,
+          paymentId: true,
+          amount: true,
+          currency: true,
+          reason: true,
+          actorName: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: "desc" },
+      })
+    : [];
   return {
-    payments: selected.map(publicHistoryEntry),
+    payments: entries.map((entry) => {
+      const rows = refunds.filter((r) => r.paymentId === entry.id);
+      const refunded = rows.reduce((n, r) => n + moneyToCents(r.amount), 0);
+      return {
+        ...entry,
+        refundedAmount: centsToMoney(refunded),
+        refundableAmount: centsToMoney(moneyToCents(entry.amountPaid) - refunded),
+        refunds: rows,
+      };
+    }),
     totals: {
       cash: centsToMoney(databaseCents(total.cash)),
       card: centsToMoney(databaseCents(total.card)),

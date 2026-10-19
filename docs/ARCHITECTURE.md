@@ -32,3 +32,25 @@ API routes: `src/app/api/`. Permission rules: `src/lib/security-policy.cjs`.
 Staff orders enter `PENDING`. QR orders enter `AWAITING_WAITER_APPROVAL` first. Preparation: `PREPARING` → `READY` → `DELIVERED` → `PAID`. The server validates quantities, availability and current prices.
 
 Socket.IO refreshes staff screens in real-time. Guests poll token-scoped status. Order and payment request keys protect retries.
+
+POS additions always use the keyed order POST route, even when the table already
+has open orders. Each addition is a separate pending kitchen ticket. Legacy
+`addItems` PATCH calls are refused; they must not hide new work inside READY or
+DELIVERED tickets. The client retains an uncertain request across refreshes.
+
+Currency changes are serialized with financial writes and refused once orders,
+payments or cash shifts exist. Reports filter historical collections using their
+immutable receipt currency; missing legacy currency stays explicitly unknown.
+Product sales retain their order-date basis and do not represent physical returns.
+
+Refunds are separate append-only ledger records, linked to a canonical immutable
+payment receipt and an open cash shift. They do not reopen paid orders or erase
+payments. An administrator confirms that the external refund is complete, supplies
+a reason and retries with the same key. Cash refunds reduce expected drawer cash;
+net collection reports subtract refunds by their own recording date. Product
+returns/inventory and bank refund execution are outside this flow.
+
+AuditEvent stores the actor, timestamp, entity and bounded details of order,
+cancellation, payment/discount, refund and backup-management actions. It is exposed
+only to administrators, with bounded cursor pagination. Business ledger writes and
+their audit events commit in the same transaction.

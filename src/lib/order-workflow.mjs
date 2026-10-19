@@ -84,7 +84,10 @@ export function validateOrderPatch(body, order) {
         "An order with recorded payments cannot be edited."
       );
     }
-    return { action };
+    throw new OrderWorkflowError(
+      "new-ticket-required",
+      "Ek ürünler yeni sipariş olarak gönderilmelidir. Adisyonu yenileyip yeniden deneyin."
+    );
   }
 
   if (action === "cancelItemId") {

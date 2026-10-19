@@ -1088,7 +1088,8 @@ html[data-theme="dark"] .table-node-selected .table-chair {
 .settings-panels[data-section="business-identity"] .surface-panel:not(#business-identity),
 .settings-panels[data-section="local-access"] .surface-panel:not(#local-access),
 .settings-panels[data-section="staff-roles"] .surface-panel:not(#staff-roles),
-.settings-panels[data-section="device-settings"] .surface-panel:not(#device-settings) {
+.settings-panels[data-section="device-settings"] .surface-panel:not(#device-settings),
+.settings-panels[data-section="recovery-history"] .surface-panel:not(#recovery-history) {
   display: none;
 }
 .settings-panels [class*="text-\[10px\]"],

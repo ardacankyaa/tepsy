@@ -78,6 +78,8 @@ export async function POST(request) {
 
     const backupFile = await createVerifiedResetBackup();
     await prisma.$transaction(async (tx) => {
+      await tx.refund.deleteMany();
+      await tx.auditEvent.deleteMany();
       await tx.paymentAttempt.deleteMany();
       await tx.payment.deleteMany();
       await tx.orderItem.deleteMany();

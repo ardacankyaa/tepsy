@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Receipt } from "lucide-react";
+import RefundDialog from "./RefundDialog";
 import "@/styles/pos-payments.css";
 
 export default function PosPaymentHistory({
@@ -18,6 +19,20 @@ export default function PosPaymentHistory({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
+  const [refundEntry, setRefundEntry] = useState(null);
+  const [canRefund, setCanRefund] = useState(false);
+  useEffect(() => {
+    let active = true;
+    fetch("/api/auth/status", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (active) setCanRefund(Boolean(d && (!d.authEnabled || d.session?.role === "ADMIN")));
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
   const tr = lang === "tr";
   function historicalAmount(value, currency) {
     if (currency === undefined) return formatPrice(value);
@@ -196,19 +211,50 @@ export default function PosPaymentHistory({
               <strong className="pos-history-amount">
                 {historicalAmount(entry.amountPaid, entry.currency)}
               </strong>
-              <button
-                type="button"
-                className="pos-history-receipt"
-                aria-label={`${tr ? "Fişi aç" : "Open receipt"}: ${entry.receiptNumber}`}
-                disabled={loading || entry.receiptAvailable === false}
-                onClick={() => onReceipt(entry.id)}
-              >
-                <Receipt size={17} aria-hidden="true" />
-                <span>{tr ? "Fiş" : "Receipt"}</span>
-              </button>
+              <div className="pos-history-actions">
+                {Number(entry.refundedAmount || 0) > 0 && (
+                  <span className="text-xs">
+                    {tr ? "İade: " : "Refunded: "}
+                    {historicalAmount(entry.refundedAmount, entry.currency)}
+                  </span>
+                )}
+                {canRefund &&
+                  entry.currency &&
+                  Number(entry.refundableAmount ?? entry.amountPaid) > 0 && (
+                    <button
+                      type="button"
+                      className="secondary-action min-h-11 px-2 text-xs"
+                      onClick={() => setRefundEntry(entry)}
+                    >
+                      {tr ? "İade / düzeltme" : "Refund / correction"}
+                    </button>
+                  )}
+                <button
+                  type="button"
+                  className="pos-history-receipt"
+                  aria-label={`${tr ? "Fişi aç" : "Open receipt"}: ${entry.receiptNumber}`}
+                  disabled={loading || entry.receiptAvailable === false}
+                  onClick={() => onReceipt(entry.id)}
+                >
+                  <Receipt size={17} aria-hidden="true" />
+                  <span>{tr ? "Fiş" : "Receipt"}</span>
+                </button>
+              </div>
             </article>
           ))}
         </div>
+      )}
+      {refundEntry && (
+        <RefundDialog
+          key={refundEntry.id}
+          entry={refundEntry}
+          lang={lang}
+          onClose={() => setRefundEntry(null)}
+          onSaved={() => {
+            setRefundEntry(null);
+            setRetry((n) => n + 1);
+          }}
+        />
       )}
       {(cursor || result?.nextCursor) && (
         <nav className="pos-history-pages" aria-label={tr ? "Tahsilat sayfaları" : "Payment pages"}>

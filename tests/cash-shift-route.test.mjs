@@ -28,6 +28,7 @@ function makeRoute(closed = false) {
   };
   let writes = 0;
   const client = {
+    refund: { findMany: async () => [] },
     restaurantConfig: { findFirst: async () => ({ authEnabled: false }) },
     cashShift: {
       findUnique: async ({ where }) =>

@@ -28,14 +28,19 @@ Demo credentials: code `DEMO01`, owner password `TepsyDemo123!`, staff PIN `1234
 
 ## Features
 
-| Area       | Details                                                      |
-| ---------- | ------------------------------------------------------------ |
-| Floor      | Sections, editable floor plan, live table status             |
-| Orders     | Staff and QR ordering with waiter approval, kitchen workflow |
-| Checkout   | Cash/card, split payments, receipts, discounts               |
-| Operations | Cash shifts, reports, SQLite backups, protected reset        |
-| Menu       | Product photos, business logo, multi-currency                |
-| Access     | Owner/staff roles, remembered devices, session management    |
+| Area       | Details                                                          |
+| ---------- | ---------------------------------------------------------------- |
+| Floor      | Sections, editable floor plan, live table status                 |
+| Orders     | Staff and QR ordering with waiter approval, kitchen workflow     |
+| Checkout   | Cash/card, split payments, receipts, discounts, recorded refunds |
+| Operations | Cash shifts, reports, activity history, full recovery backups    |
+| Menu       | Product photos, business logo, business currency setup           |
+| Access     | Owner/staff roles, remembered devices, session management        |
+
+Each POS addition becomes a new pending kitchen ticket, including additions to a
+delivered account. Currency can be chosen before trading starts and is locked
+after the first order or cash shift. Recorded card payments and refunds document
+external transactions; TEPSY does not approve or initiate bank transfers.
 
 ## Tech Stack
 

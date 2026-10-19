@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
+import { recordAudit } from "@/lib/audit.mjs";
 import {
   allocateDiscountAcrossOrders,
   basisPointsToPercent,
@@ -358,6 +359,13 @@ export async function POST(request) {
           response,
           restaurant,
           cardVerification,
+        });
+        await recordAudit(client, request, "PAYMENT_RECORDED", receipt.id, {
+          amount: receipt.amountPaid,
+          currency: receipt.currency,
+          method: parsed.paymentMethod,
+          discountReason: parsed.discountReason,
+          discountPercent: basisPointsToPercent(parsed.discountPercentBasisPoints),
         });
         return { ...response, cardVerification, receipt };
       })

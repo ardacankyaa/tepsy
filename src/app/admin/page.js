@@ -16,7 +16,16 @@ import {
 import { useApp } from "@/lib/AppContext";
 
 export default function AdminDashboardPage() {
-  const { t, lang, currency, setCurrency, currencySaving, currencyError, formatPrice } = useApp();
+  const {
+    t,
+    lang,
+    currency,
+    setCurrency,
+    currencySaving,
+    currencyLocked,
+    currencyError,
+    formatPrice,
+  } = useApp();
   const [report, setReport] = useState(null);
   const [tablesCount, setTablesCount] = useState(0);
   const [menuCount, setMenuCount] = useState(0);
@@ -144,6 +153,13 @@ export default function AdminDashboardPage() {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          {currencyLocked && (
+            <span className="max-w-48 text-xs text-[var(--text-secondary)]">
+              {lang === "tr"
+                ? "Satış başladığı için para birimi sabit."
+                : "Currency is fixed after trading starts."}
+            </span>
+          )}
           {/* Para Birimi Seçici */}
           <div className="segmented-control text-xs">
             <Coins className="w-3.5 h-3.5 text-[var(--accent-gold)]" />
@@ -156,7 +172,7 @@ export default function AdminDashboardPage() {
                   key={c}
                   onClick={() => setCurrency(c)}
                   aria-pressed={currency === c}
-                  disabled={currencySaving}
+                  disabled={currencySaving || currencyLocked}
                   className={`w-6 h-6 rounded font-black text-xs transition-all ${
                     currency === c
                       ? "primary-action shadow-xs"
