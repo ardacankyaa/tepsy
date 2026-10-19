@@ -225,7 +225,14 @@ export async function PATCH(request) {
       const payments = await tx.payment.findMany({
         where: { cashShiftId: requestedShift.id },
         orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-        select: { id: true, orderId: true, paymentMethod: true, amountPaid: true, createdAt: true },
+        select: {
+          id: true,
+          orderId: true,
+          paymentMethod: true,
+          amountPaid: true,
+          tipAmount: true,
+          createdAt: true,
+        },
       });
       const refunds = await tx.refund.findMany({
         where: { cashShiftId: requestedShift.id },

@@ -197,9 +197,17 @@ export default function AdminReportsPage() {
         </div>
       </div>
 
+      {reportData?.summary?.tipTotal > 0 && (
+        <p className="px-3 py-2 text-xs" role="status">
+          {lang === "tr" ? "Bahşiş (cirodan ayrı): " : "Tips (separate from sales): "}
+          {formatPrice(summary.tipTotal)} ·{" "}
+          {lang === "tr" ? "Bahşiş dahil net tahsilat: " : "Net collections including tips: "}
+          {formatPrice(summary.collectionsIncludingTips)}
+        </p>
+      )}
       {reportData?.summary?.refundTotal > 0 && (
         <p className="px-3 py-2 text-xs" role="status">
-          {lang === "tr" ? "Cirodan düşülen iadeler: " : "Refunds deducted from collections: "}
+          {lang === "tr" ? "Toplam iade (bahşiş dahil): " : "Total refunds (including tips): "}
           {formatPrice(reportData.summary.refundTotal)}
         </p>
       )}

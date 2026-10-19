@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { selectReportCurrency } from "@/lib/report-currency.mjs";
 import { centsToMoney, moneyToCents } from "@/lib/finance.mjs";
+import { summarizeRefunds } from "@/lib/refunds.mjs";
 import { aggregateCollections, aggregateProductSales } from "@/lib/z-report-finance.mjs";
 import {
   BUSINESS_TIME_ZONE,
@@ -88,10 +89,9 @@ export async function GET(request) {
       currentCurrency: config?.currency || "₺",
       requested: searchParams.get("currency"),
     });
-    const refundCents = (method) =>
-      refunds
-        .filter((r) => !method || r.paymentMethod === method)
-        .reduce((n, r) => n + moneyToCents(r.amount), 0);
+    const refundCents = (method) => summarizeRefunds(refunds, method).amountCents;
+    const refundTipCents = (method) => summarizeRefunds(refunds, method).tipCents;
+    const refundPrincipalCents = (method) => summarizeRefunds(refunds, method).principalCents;
     const collectionSummary = aggregateCollections(payments);
     const productSummary = aggregateProductSales(orders);
     const averageOrderValueCents = collectionSummary.averageOrderValueCents;
@@ -110,12 +110,24 @@ export async function GET(request) {
         timeZone,
       },
       summary: {
-        totalRevenue: moneyNumber(collectionSummary.totalRevenueCents - refundCents()),
+        tipTotal: moneyNumber(
+          payments.reduce((sum, p) => sum + moneyToCents(p.tipAmount || 0), 0) - refundTipCents()
+        ),
+        collectionsIncludingTips: moneyNumber(
+          collectionSummary.totalRevenueCents +
+            payments.reduce((sum, p) => sum + moneyToCents(p.tipAmount || 0), 0) -
+            refundCents()
+        ),
+        totalRevenue: moneyNumber(collectionSummary.totalRevenueCents - refundPrincipalCents()),
         grossCollections: moneyNumber(collectionSummary.totalRevenueCents),
         refundTotal: moneyNumber(refundCents()),
-        cashRevenue: moneyNumber(collectionSummary.cashRevenueCents - refundCents("CASH")),
-        cardRevenue: moneyNumber(collectionSummary.cardRevenueCents - refundCents("CREDIT_CARD")),
-        otherRevenue: moneyNumber(collectionSummary.otherRevenueCents - refundCents("OTHER")),
+        cashRevenue: moneyNumber(collectionSummary.cashRevenueCents - refundPrincipalCents("CASH")),
+        cardRevenue: moneyNumber(
+          collectionSummary.cardRevenueCents - refundPrincipalCents("CREDIT_CARD")
+        ),
+        otherRevenue: moneyNumber(
+          collectionSummary.otherRevenueCents - refundPrincipalCents("OTHER")
+        ),
         totalOrdersCount: collectionSummary.totalOrdersCount,
         averageOrderValue: moneyNumber(averageOrderValueCents),
         salesOrdersCount: productSummary.ordersCount,
@@ -130,6 +142,7 @@ export async function GET(request) {
       transactions: payments.map((payment) => ({
         id: payment.id,
         amountPaid: moneyNumber(moneyToCents(payment.amountPaid)),
+        tipAmount: moneyNumber(moneyToCents(payment.tipAmount || 0)),
         paymentMethod: payment.paymentMethod,
         createdAt: payment.createdAt,
         tableNumber: payment.order?.table?.tableNumber || "Masa",

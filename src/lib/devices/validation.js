@@ -222,6 +222,20 @@ export function validateReceipt(input) {
       : "₺",
     timestamp,
     totalAmount: cleanAmount(input.totalAmount),
+    ...(Array.isArray(input.paymentItems)
+      ? {
+          paymentItems: input.paymentItems.slice(0, 250).map((i) => ({
+            quantity: Math.max(0, Math.min(999, Number(i.quantity) || 0)),
+            name: cleanText(i.name, 100, "Ürün"),
+          })),
+        }
+      : {}),
+    ...(input.tipAmount != null
+      ? {
+          tipAmount: cleanAmount(input.tipAmount),
+          collectedTotal: cleanAmount(input.collectedTotal),
+        }
+      : {}),
     ...(input.grossTotal != null
       ? {
           grossTotal: cleanAmount(input.grossTotal),

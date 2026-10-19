@@ -2820,6 +2820,333 @@ async function main() {
     expectStatus(await api("/api/tables", { cookie: `${cookieName}=${tokenValue}.ignored` }), 401);
     expectStatus(await api("/api/tables", { cookie: owner }), 200);
   });
+  await check(
+    "item-selected payments, tip snapshots, replay and QR tip intent preserve exact balances",
+    async () => {
+      const activeShift = expectStatus(
+        await api("/api/pos/shift", { cookie: credentials.CASHIER }),
+        200
+      ).currentShift;
+      if (!activeShift)
+        expectStatus(
+          await api("/api/pos/shift", {
+            method: "POST",
+            cookie: credentials.CASHIER,
+            body: { openingCash: "0.00" },
+          }),
+          201
+        );
+      const table = expectStatus(
+        await api("/api/tables", {
+          method: "POST",
+          cookie: owner,
+          body: { tableNumber: "ITEM-TIP-QA", section: "Salon", capacity: 4 },
+        }),
+        201
+      );
+      const products = [];
+      for (const [name, price] of [
+        ["Club sandwich", 100],
+        ["Limonata", 50],
+        ["Espresso", 30],
+      ])
+        products.push(
+          expectStatus(
+            await api("/api/menu-items", {
+              method: "POST",
+              cookie: owner,
+              body: {
+                name: "QA " + name,
+                price,
+                categoryId: espresso.categoryId,
+                isAvailable: true,
+              },
+            }),
+            201
+          )
+        );
+      const order = expectStatus(
+        await api("/api/orders", {
+          method: "POST",
+          cookie: credentials.WAITER,
+          body: {
+            tableId: table.id,
+            items: products.map((p) => ({ menuItemId: p.id, quantity: 1 })),
+            idempotencyKey: "item-tip-order-1",
+          },
+        }),
+        201
+      );
+      const choose = order.items
+        .filter((i) => i.menuItemId !== products[2].id)
+        .map((i) => ({ orderItemId: i.id, quantity: 1 }));
+      const body = {
+        tableId: table.id,
+        paymentMethod: "CASH",
+        idempotencyKey: "item-tip-pay-1",
+        selectedItems: choose,
+        tipAmount: "10",
+      };
+      const paid = expectStatus(
+        await api("/api/pos/payment", { method: "POST", cookie: credentials.CASHIER, body }),
+        200
+      );
+      assert.equal(paid.amountPaid, "150.00");
+      assert.equal(paid.remainingBalance, "30.00");
+      assert.equal(paid.receipt.tipAmount, "10.00");
+      assert.equal(paid.receipt.collectedTotal, "160.00");
+      assert.equal(paid.receipt.paymentItems.length, 2);
+      const replay = expectStatus(
+        await api("/api/pos/payment", { method: "POST", cookie: credentials.CASHIER, body }),
+        200
+      );
+      assert.equal(replay.receipt.id, paid.receipt.id);
+      expectStatus(
+        await api("/api/pos/payment", {
+          method: "POST",
+          cookie: credentials.CASHIER,
+          body: { ...body, idempotencyKey: "item-tip-duplicate" },
+        }),
+        409
+      );
+      expectStatus(
+        await api("/api/pos/payment", {
+          method: "POST",
+          cookie: credentials.CASHIER,
+          body: { ...body, tipAmount: "11" },
+        }),
+        409
+      );
+      const refreshed = expectStatus(await api("/api/tables", { cookie: owner }), 200).find(
+        (t) => t.id === table.id
+      );
+      assert.equal(
+        refreshed.orders[0].items.find((i) => i.id === choose[0].orderItemId).remainingQuantity,
+        0
+      );
+      const last = expectStatus(
+        await api("/api/pos/payment", {
+          method: "POST",
+          cookie: credentials.CASHIER,
+          body: {
+            tableId: table.id,
+            paymentMethod: "OTHER",
+            idempotencyKey: "item-tip-pay-2",
+            selectedItems: [
+              {
+                orderItemId: order.items.find((i) => i.menuItemId === products[2].id).id,
+                quantity: 1,
+              },
+            ],
+          },
+        }),
+        200
+      );
+      assert.equal(last.amountPaid, "30.00");
+      assert.equal(last.remainingBalance, "0.00");
+      assert.equal(last.receipt.tipAmount, "0.00");
+      const snapshot = expectStatus(
+        await api("/api/pos/payments/" + paid.receipt.id, { cookie: owner }),
+        200
+      );
+      assert.deepEqual(snapshot.receipt.paymentItems, paid.receipt.paymentItems);
+      assert.equal(snapshot.receipt.tipAmount, "10.00");
+      await api("/api/config", { method: "PUT", cookie: owner, body: { qrOrderEnabled: true } });
+      const token = expectStatus(
+        await api("/api/tables/qr", { method: "POST", cookie: owner, body: { tableId: table.id } }),
+        200
+      ).token;
+      const qrBody = {
+        token,
+        items: [{ menuItemId: products[0].id, quantity: 1 }],
+        tipAmount: "7.50",
+        idempotencyKey: "qr-tip-test-order",
+      };
+      const qr = expectStatus(
+        await api("/api/public/orders", { method: "POST", body: qrBody }),
+        202
+      );
+      expectStatus(
+        await api("/api/qr-requests", {
+          method: "PATCH",
+          cookie: credentials.WAITER,
+          body: { id: qr.orderId, action: "APPROVE" },
+        }),
+        200
+      );
+      const saved = expectStatus(await api("/api/orders/" + qr.orderId, { cookie: owner }), 200);
+      assert.equal(Number(saved.tipAmount), 7.5);
+      assert.equal(Number(saved.totalPrice), 100);
+      expectStatus(
+        await api("/api/public/orders", {
+          method: "POST",
+          body: { ...qrBody, tipAmount: "-1", idempotencyKey: "qr-tip-invalid" },
+        }),
+        400
+      );
+
+      const reportBeforeRefund = expectStatus(
+        await api("/api/reports/z-report?period=all&currency=%E2%82%BA", { cookie: owner }),
+        200
+      );
+      const refundBody = {
+        paymentId: paid.receipt.id,
+        amount: "160.00",
+        reason: "Return bill amount and tip",
+        externallyConfirmed: true,
+        idempotencyKey: "item-tip-refund-160",
+      };
+      const refund = expectStatus(
+        await api("/api/pos/refunds", { method: "POST", cookie: owner, body: refundBody }),
+        200
+      );
+      assert.equal(refund.amount, "160.00");
+      assert.equal(refund.principalAmount, "150.00");
+      assert.equal(refund.tipAmount, "10.00");
+      assert.equal(refund.remainingRefundable, "0.00");
+      assert.deepEqual(
+        expectStatus(
+          await api("/api/pos/refunds", {
+            method: "POST",
+            cookie: owner,
+            body: refundBody,
+          }),
+          200
+        ),
+        refund
+      );
+      expectStatus(
+        await api("/api/pos/refunds", {
+          method: "POST",
+          cookie: owner,
+          body: {
+            ...refundBody,
+            amount: "0.01",
+            idempotencyKey: "item-tip-refund-overflow",
+          },
+        }),
+        409
+      );
+      const history = expectStatus(
+        await api(
+          `/api/pos/payments?tableId=${encodeURIComponent(table.id)}&orderIds=${encodeURIComponent(order.id)}`,
+          { cookie: owner }
+        ),
+        200
+      );
+      const refundedEntry = history.payments.find((entry) => entry.id === paid.receipt.id);
+      assert.equal(refundedEntry.refundedAmount, "160.00");
+      assert.equal(refundedEntry.refundedTipAmount, "10.00");
+      assert.equal(refundedEntry.refundablePrincipalAmount, "0.00");
+      assert.equal(refundedEntry.refundableTipAmount, "0.00");
+      assert.equal(refundedEntry.refundableAmount, "0.00");
+      const reportAfterRefund = expectStatus(
+        await api("/api/reports/z-report?period=all&currency=%E2%82%BA", { cookie: owner }),
+        200
+      );
+      assert.equal(
+        Number(reportBeforeRefund.summary.totalRevenue) -
+          Number(reportAfterRefund.summary.totalRevenue),
+        150
+      );
+      assert.equal(
+        Number(reportBeforeRefund.summary.tipTotal) - Number(reportAfterRefund.summary.tipTotal),
+        10
+      );
+      assert.equal(
+        Number(reportBeforeRefund.summary.collectionsIncludingTips) -
+          Number(reportAfterRefund.summary.collectionsIncludingTips),
+        160
+      );
+      assert.equal(
+        Number(reportAfterRefund.summary.refundTotal) -
+          Number(reportBeforeRefund.summary.refundTotal),
+        160
+      );
+    }
+  );
+  await check("connected account history subtracts tips collected on closed orders", async () => {
+    const table = expectStatus(
+      await api("/api/tables", {
+        method: "POST",
+        cookie: owner,
+        body: { tableNumber: "TIP-ACCOUNT-ROLLUP-QA", section: "Salon", capacity: 4 },
+      }),
+      201
+    );
+    const firstOrder = expectStatus(
+      await api("/api/orders", {
+        method: "POST",
+        cookie: credentials.WAITER,
+        body: {
+          tableId: table.id,
+          items: [{ menuItemId: espresso.id, quantity: 1 }],
+          idempotencyKey: "tip-account-rollup-first-order",
+        },
+      }),
+      201
+    );
+    await api("/api/config", { method: "PUT", cookie: owner, body: { qrOrderEnabled: true } });
+    const token = expectStatus(
+      await api("/api/tables/qr", {
+        method: "POST",
+        cookie: owner,
+        body: { tableId: table.id },
+      }),
+      200
+    ).token;
+    const qrOrder = expectStatus(
+      await api("/api/public/orders", {
+        method: "POST",
+        body: {
+          token,
+          items: [{ menuItemId: espresso.id, quantity: 1 }],
+          tipAmount: "10.00",
+          idempotencyKey: "tip-account-rollup-qr-order",
+        },
+      }),
+      202
+    );
+    expectStatus(
+      await api("/api/qr-requests", {
+        method: "PATCH",
+        cookie: credentials.WAITER,
+        body: { id: qrOrder.orderId, action: "APPROVE" },
+      }),
+      200
+    );
+    const firstPayment = expectStatus(
+      await api("/api/pos/payment", {
+        method: "POST",
+        cookie: credentials.CASHIER,
+        body: {
+          tableId: table.id,
+          paymentMethod: "OTHER",
+          idempotencyKey: "tip-account-rollup-first-payment",
+          selectedItems: [{ orderItemId: firstOrder.items[0].id, quantity: 1 }],
+          tipAmount: "10.00",
+        },
+      }),
+      200
+    );
+    assert.equal(firstPayment.receipt.tipAmount, "10.00");
+    assert.equal(firstPayment.orders.find((order) => order.id === firstOrder.id).status, "PAID");
+    assert.equal(
+      firstPayment.orders.find((order) => order.id === qrOrder.orderId).status,
+      "PENDING"
+    );
+
+    const history = expectStatus(
+      await api(
+        `/api/pos/payments?tableId=${encodeURIComponent(table.id)}&orderIds=${encodeURIComponent(qrOrder.orderId)}`,
+        { cookie: owner }
+      ),
+      200
+    );
+    assert.equal(history.account.remainingTipAmount, "0.00");
+    assert.ok(history.account.orderIds.includes(firstOrder.id));
+    assert.ok(history.account.orderIds.includes(qrOrder.orderId));
+  });
   await check("login and owner password changes share a trusted peer quota", async () => {
     for (let index = 0; index < 8; index++) {
       const response =

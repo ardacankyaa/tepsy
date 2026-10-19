@@ -4,7 +4,7 @@ export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { authorizePaymentAccess } from "@/lib/payment-access.mjs";
-import { parsePaymentRequest } from "@/lib/payment-request.mjs";
+import { parsePaymentRequest, PaymentRequestError } from "@/lib/payment-request.mjs";
 import { requireOpenCashShift } from "@/lib/cash-shift.mjs";
 import { getDeviceConfigPath, readDeviceConfig } from "@/lib/devices/config";
 import {
@@ -17,6 +17,13 @@ export async function POST(request) {
   try {
     await authorizePaymentAccess(request, prisma);
     const parsed = parsePaymentRequest(await request.json());
+    if (parsed.selectedItems || parsed.tipCents) {
+      throw new PaymentRequestError(
+        409,
+        "terminal-selection-unsupported",
+        "Ürün bazlı veya bahşişli tahsilat TokenX adisyon aktarımıyla desteklenmiyor."
+      );
+    }
     const { paymentTerminal } = await readDeviceConfig();
     if (
       parsed.paymentMethod !== "CREDIT_CARD" ||

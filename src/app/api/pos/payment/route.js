@@ -32,6 +32,7 @@ import {
 import { assertCardPaymentAllowed } from "@/lib/card-payment-policy.mjs";
 import { authorizePaymentAccess } from "@/lib/payment-access.mjs";
 import { buildAccountPaymentReceipt } from "@/lib/payment-receipts.mjs";
+import { planItemPayment } from "@/lib/item-payments.mjs";
 import {
   preferOrderItemNameSnapshots,
   preferTableOrderItemNameSnapshots,
@@ -42,7 +43,15 @@ const PAYMENT_INCLUDE = {
   table: true,
   items: { where: { status: { not: "CANCELLED" } }, include: { menuItem: true } },
   payments: {
-    select: { id: true, orderId: true, amountPaid: true, paymentMethod: true, createdAt: true },
+    select: {
+      id: true,
+      orderId: true,
+      amountPaid: true,
+      tipAmount: true,
+      itemsJson: true,
+      paymentMethod: true,
+      createdAt: true,
+    },
   },
 };
 
@@ -51,6 +60,8 @@ function publicPayment(payment) {
     id: payment.id,
     orderId: payment.orderId,
     amountPaid: centsToMoney(moneyToCents(payment.amountPaid)),
+    tipAmount: centsToMoney(moneyToCents(payment.tipAmount || 0)),
+    items: payment.itemsJson ? JSON.parse(payment.itemsJson) : [],
     paymentMethod: payment.paymentMethod,
     createdAt: payment.createdAt,
   };
@@ -236,21 +247,42 @@ async function createPayments(client, parsed) {
     order.discountReason = discount.discountReason;
   }
 
-  const paymentPlan = planPayment(orders, parsed.requestedAmountCents);
+  const paymentPlan = parsed.selectedItems
+    ? planItemPayment(orders, parsed.selectedItems)
+    : planPayment(orders, parsed.requestedAmountCents);
   const newPayments = [];
   for (const allocation of paymentPlan.allocations) {
     const order = orders.find((candidate) => candidate.id === allocation.orderId);
-    if (allocation.amountCents > 0 || allocation.nextStatus === "PAID") {
+    if (
+      allocation.amountCents > 0 ||
+      allocation.nextStatus === "PAID" ||
+      allocation.paymentItems?.length
+    ) {
       const payment = await client.payment.create({
         data: attachPaymentToCashShift(cashShift, {
           orderId: order.id,
           paymentMethod: parsed.paymentMethod,
           amountPaid: centsToMoney(allocation.amountCents),
+          tipAmount: centsToMoney(newPayments.length === 0 ? parsed.tipCents : 0),
+          itemsJson: allocation.paymentItems ? JSON.stringify(allocation.paymentItems) : null,
           idempotencyKey: parsed.idempotencyKey,
           requestFingerprint: parsed.requestFingerprint,
         }),
       });
       newPayments.push(payment);
+      for (const item of allocation.paymentItems || []) {
+        const original = order.items.find((i) => i.id === item.orderItemId);
+        const changed = await client.orderItem.updateMany({
+          where: { id: item.orderItemId, paidQuantity: original.paidQuantity || 0 },
+          data: { paidQuantity: { increment: item.quantity } },
+        });
+        if (changed.count !== 1)
+          throw new PaymentRequestError(
+            409,
+            "item-conflict",
+            "Ürün aynı anda tahsil edildi. Hesabı yenileyin."
+          );
+      }
     }
 
     if (allocation.nextStatus === "PAID" && order.status !== "PAID") {
@@ -339,6 +371,16 @@ export async function POST(request) {
     const result = await prisma.$transaction((tx) =>
       executeIdempotentPayment(tx, parsed, async (client) => {
         const config = parsed.paymentMethod === "CREDIT_CARD" ? await readDeviceConfig() : null;
+        if (
+          (parsed.selectedItems || parsed.tipCents) &&
+          config?.paymentTerminal?.enabled &&
+          config.paymentTerminal.adapter === "TOKENX_CLOUD"
+        )
+          throw new PaymentRequestError(
+            409,
+            "terminal-selection-unsupported",
+            "Ürün bazlı veya bahşişli tahsilatı harici terminalde tamamlayıp Diğer yöntemiyle kaydedin. TokenX adisyon aktarımı bu seçimi desteklemiyor."
+          );
         const cardVerification = assertCardPaymentAllowed(parsed, config?.paymentTerminal);
         if (
           parsed.paymentMethod === "CREDIT_CARD" &&

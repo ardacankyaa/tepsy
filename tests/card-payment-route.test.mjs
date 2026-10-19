@@ -92,3 +92,17 @@ test("TokenX requests export before confirmation and refuses a stale export befo
   assert.equal(stale.body.code, "terminal-account-changed");
   assert.equal(route.writes(), 0);
 });
+
+test("TokenX rejects selected-item and tipped card requests before requesting confirmation or exporting", async () => {
+  const route = makeRoute({ enabled: true, adapter: "TOKENX_CLOUD" });
+  for (const request of [
+    { ...body, selectedItems: [{ orderItemId: "line-1", quantity: 1 }] },
+    { ...body, tipAmount: "2.50" },
+  ]) {
+    const result = await route.post({ json: async () => request });
+    assert.equal(result.status, 409);
+    assert.equal(result.body.code, "terminal-selection-unsupported");
+    assert.equal(result.body.terminalBasketTransferRequired, undefined);
+  }
+  assert.equal(route.writes(), 0);
+});

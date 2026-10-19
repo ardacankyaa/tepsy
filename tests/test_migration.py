@@ -46,6 +46,71 @@ class MigrationTests(unittest.TestCase):
             with closing(sqlite3.connect(backup)) as connection:
                 self.assertNotIn('menuItemName', {row[1] for row in connection.execute('PRAGMA table_info(OrderItem)')})
 
+    def test_existing_refund_rows_gain_zero_tip_portion_additively(self):
+        with tempfile.TemporaryDirectory(prefix="tepsy-refund-tip-migration-") as directory:
+            root = Path(directory)
+            database = root / "legacy-refund.db"
+            with closing(sqlite3.connect(database)) as connection:
+                connection.executescript('''
+                    CREATE TABLE "Order" (id TEXT PRIMARY KEY, status TEXT, totalPrice DECIMAL);
+                    CREATE TABLE RestaurantConfig (id TEXT PRIMARY KEY, restaurantName TEXT);
+                    CREATE TABLE Category (id TEXT PRIMARY KEY, name TEXT);
+                    CREATE TABLE MenuItem (id TEXT PRIMARY KEY, name TEXT, categoryId TEXT);
+                    CREATE TABLE OrderItem (id TEXT PRIMARY KEY, orderId TEXT, menuItemId TEXT,
+                        unitPrice DECIMAL, menuItemName TEXT, menuItemCategoryName TEXT);
+                    CREATE TABLE Refund (
+                        id TEXT PRIMARY KEY, paymentId TEXT NOT NULL, cashShiftId TEXT NOT NULL,
+                        amount DECIMAL NOT NULL, paymentMethod TEXT NOT NULL, currency TEXT NOT NULL,
+                        reason TEXT NOT NULL, actorId TEXT NOT NULL, actorName TEXT NOT NULL,
+                        idempotencyKey TEXT NOT NULL, requestFingerprint TEXT NOT NULL,
+                        responseJson TEXT NOT NULL, createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    );
+                    INSERT INTO "Order" VALUES ('o1', 'PAID', 45.50);
+                    INSERT INTO RestaurantConfig VALUES ('config', 'Legacy Cafe');
+                    INSERT INTO Refund (id,paymentId,cashShiftId,amount,paymentMethod,currency,reason,
+                        actorId,actorName,idempotencyKey,requestFingerprint,responseJson)
+                    VALUES ('r1','p1','s1',10,'CASH','₺','Correction','owner','Owner',
+                        'refund-old-123','fingerprint','{}');
+                ''')
+            migration = load_script('migrate-tepsy')
+            self.assertTrue(migration.needs_upgrade(database))
+            migration.upgrade(database, root / "backups")
+            self.assertFalse(migration.needs_upgrade(database))
+            with closing(sqlite3.connect(database)) as connection:
+                self.assertEqual(
+                    connection.execute('SELECT id,amount,tipAmount FROM Refund').fetchone(),
+                    ('r1', 10, 0),
+                )
+                self.assertIn(
+                    'tipAmount',
+                    {row[1] for row in connection.execute('PRAGMA table_info("Refund")')},
+                )
+
+    def test_new_refund_table_includes_tip_portion(self):
+        with tempfile.TemporaryDirectory(prefix="tepsy-refund-table-migration-") as directory:
+            root = Path(directory)
+            database = root / "legacy-without-refunds.db"
+            with closing(sqlite3.connect(database)) as connection:
+                connection.executescript('''
+                    CREATE TABLE "Order" (id TEXT PRIMARY KEY, status TEXT, totalPrice DECIMAL);
+                    CREATE TABLE RestaurantConfig (id TEXT PRIMARY KEY, restaurantName TEXT);
+                    CREATE TABLE Category (id TEXT PRIMARY KEY, name TEXT);
+                    CREATE TABLE MenuItem (id TEXT PRIMARY KEY, name TEXT, categoryId TEXT);
+                    CREATE TABLE OrderItem (id TEXT PRIMARY KEY, orderId TEXT, menuItemId TEXT,
+                        unitPrice DECIMAL, menuItemName TEXT, menuItemCategoryName TEXT);
+                    INSERT INTO "Order" VALUES ('o1', 'PAID', 45.50);
+                    INSERT INTO RestaurantConfig VALUES ('config', 'Legacy Cafe');
+                ''')
+            migration = load_script('migrate-tepsy')
+            self.assertTrue(migration.needs_upgrade(database))
+            migration.upgrade(database, root / "backups")
+            with closing(sqlite3.connect(database)) as connection:
+                refund_columns = {
+                    row[1]: row for row in connection.execute('PRAGMA table_info("Refund")')
+                }
+                self.assertIn("tipAmount", refund_columns)
+                self.assertEqual(refund_columns["tipAmount"][4], "0")
+
 
 if __name__ == '__main__':
     unittest.main()

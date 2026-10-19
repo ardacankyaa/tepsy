@@ -5,6 +5,8 @@ function createPaymentRequest({
   discountReason,
   idempotencyKey,
   partialAmount,
+  selectedItems,
+  tipAmount,
 }) {
   const percent = Number(discountPercent ?? 0);
   if (
@@ -31,6 +33,19 @@ function createPaymentRequest({
     const value = String(partialAmount).trim().replace(",", ".");
     if (!/^\d+(?:\.\d{1,2})?$/.test(value) || Number(value) <= 0) return null;
     payload.amountPaid = Number(value).toFixed(2);
+  }
+  if (selectedItems?.length) {
+    if (
+      payload.amountPaid ||
+      selectedItems.some((s) => !s.orderItemId || !Number.isInteger(s.quantity) || s.quantity < 1)
+    )
+      return null;
+    payload.selectedItems = selectedItems;
+  }
+  if (String(tipAmount || "").trim()) {
+    const tip = String(tipAmount).trim().replace(",", ".");
+    if (!/^\d+(?:\.\d{1,2})?$/.test(tip)) return null;
+    payload.tipAmount = Number(tip).toFixed(2);
   }
   return payload;
 }

@@ -258,11 +258,11 @@ test("payment history validates limits, identifiers, order scope and opaque curs
 test("history matches zero-allocation snapshot orders, groups multi-order attempts and pages without changing totals", async () => {
   const db = new DatabaseSync(":memory:");
   db.exec(
-    `CREATE TABLE "Order" (id TEXT, tableId TEXT, totalPrice NUMERIC, discountAmount NUMERIC, status TEXT); CREATE TABLE "Table" (id TEXT, tableNumber TEXT, section TEXT); CREATE TABLE Payment (id TEXT, orderId TEXT, amountPaid NUMERIC, paymentMethod TEXT, idempotencyKey TEXT, createdAt INTEGER); CREATE TABLE PaymentAttempt (idempotencyKey TEXT, responseJson TEXT);`
+    `CREATE TABLE "Order" (id TEXT, tableId TEXT, totalPrice NUMERIC, discountAmount NUMERIC, tipAmount NUMERIC, status TEXT); CREATE TABLE "Table" (id TEXT, tableNumber TEXT, section TEXT); CREATE TABLE Payment (id TEXT, orderId TEXT, amountPaid NUMERIC, tipAmount NUMERIC, paymentMethod TEXT, idempotencyKey TEXT, createdAt INTEGER); CREATE TABLE PaymentAttempt (idempotencyKey TEXT, responseJson TEXT);`
   );
-  db.exec(`INSERT INTO "Order" VALUES ('o1','t1',65,0,'PAID'),('o2','t1',35,0,'PAID'),('old','t1',99,0,'PAID'); INSERT INTO "Table" VALUES ('t1','12','Garden');
-    INSERT INTO Payment VALUES ('p1','o1',60,'CASH','a1',1000),('p2','o2',15,'CREDIT_CARD','a2',2000),('p3','o1',5,'CREDIT_CARD','a2',2000),('p4','o2',20,'CASH','a3',3000);`);
-  db.exec(`INSERT INTO Payment VALUES ('unrelated','old',99,'CASH',NULL,500);`);
+  db.exec(`INSERT INTO "Order" VALUES ('o1','t1',65,0,0,'PAID'),('o2','t1',35,0,10,'PAID'),('old','t1',99,0,0,'PAID'); INSERT INTO "Table" VALUES ('t1','12','Garden');
+    INSERT INTO Payment VALUES ('p1','o1',60,10,'CASH','a1',1000),('p2','o2',15,0,'CREDIT_CARD','a2',2000),('p3','o1',5,0,'CREDIT_CARD','a2',2000),('p4','o2',20,0,'CASH','a3',3000);`);
+  db.exec(`INSERT INTO Payment VALUES ('unrelated','old',99,0,'CASH',NULL,500);`);
   const insert = db.prepare("INSERT INTO PaymentAttempt VALUES (?,?)");
   insert.run("a1", JSON.stringify({ receipt: buildPaymentReceipt(input) }));
   insert.run(
@@ -305,6 +305,7 @@ test("history matches zero-allocation snapshot orders, groups multi-order attemp
     netTotal: "100.00",
     totalPaid: "100.00",
     remainingBalance: "0.00",
+    remainingTipAmount: "0.00",
     orderIds: ["o1", "o2"],
   });
   assert.ok(first.nextCursor);
@@ -368,5 +369,64 @@ test("history groups TRY, USD and unknown legacy amounts separately without inve
   );
   assert.equal(result.payments.find((row) => row.id === "p2").currency, "$");
   assert.equal(result.account, null);
+  db.close();
+});
+
+test("refund history includes tips in the refundable total and separates refunded tip", async () => {
+  const db = new DatabaseSync(":memory:");
+  db.exec(`CREATE TABLE "Order" (id TEXT, tableId TEXT, totalPrice NUMERIC, discountAmount NUMERIC, status TEXT);
+    CREATE TABLE Payment (id TEXT, orderId TEXT, amountPaid NUMERIC, paymentMethod TEXT, idempotencyKey TEXT, createdAt INTEGER);
+    CREATE TABLE PaymentAttempt (idempotencyKey TEXT, responseJson TEXT);
+    INSERT INTO "Order" VALUES ('o1','t1',100,0,'PAID');
+    INSERT INTO Payment VALUES ('p1','o1',100,'CASH','a1',1000);`);
+  db.prepare("INSERT INTO PaymentAttempt VALUES (?,?)").run(
+    "a1",
+    JSON.stringify({
+      receipt: {
+        id: "p1",
+        receiptNumber: "TPS-P1",
+        tableId: "t1",
+        tableNumber: "12",
+        section: "Garden",
+        orderIds: ["o1"],
+        amountPaid: "100.00",
+        tipAmount: "20.00",
+        collectedTotal: "120.00",
+        paymentMethod: "CASH",
+        timestamp: "2026-10-10T10:00:00.000Z",
+        currency: "₺",
+      },
+    })
+  );
+  const client = {
+    $queryRawUnsafe: async (sql, ...args) => db.prepare(sql).all(...args),
+    refund: {
+      findMany: async () => [
+        {
+          id: "r1",
+          paymentId: "p1",
+          amount: "110.00",
+          tipAmount: "10.00",
+          currency: "₺",
+          reason: "Partial tip refund",
+          actorName: "Owner",
+          createdAt: new Date("2026-10-10T11:00:00.000Z"),
+        },
+      ],
+    },
+  };
+  const result = await listPaymentHistory(
+    client,
+    parsePaymentHistoryQuery(new URL("http://local/api/pos/payments?tableId=t1"))
+  );
+  assert.equal(result.payments[0].amountPaid, "100.00");
+  assert.equal(result.payments[0].tipAmount, "20.00");
+  assert.equal(result.payments[0].collectedTotal, "120.00");
+  assert.equal(result.payments[0].refundedAmount, "110.00");
+  assert.equal(result.payments[0].refundedTipAmount, "10.00");
+  assert.equal(result.payments[0].refundablePrincipalAmount, "0.00");
+  assert.equal(result.payments[0].refundableTipAmount, "10.00");
+  assert.equal(result.payments[0].refundableAmount, "10.00");
+  assert.equal(result.payments[0].refunds[0].tipAmount, "10.00");
   db.close();
 });

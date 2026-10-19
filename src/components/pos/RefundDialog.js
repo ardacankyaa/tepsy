@@ -20,6 +20,19 @@ export default function RefundDialog({ entry, lang, onClose, onSaved }) {
   const [confirmed, setConfirmed] = useState(Boolean(pending));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const principalRemaining = Number(
+    entry.refundablePrincipalAmount ?? entry.refundableAmount ?? entry.amountPaid ?? 0
+  );
+  const tipRemaining = Number(entry.refundableTipAmount || 0);
+  const requestedAmount = Number(String(amount).trim().replace(",", "."));
+  const previewTipAmount = Number.isFinite(requestedAmount)
+    ? Math.max(0, Math.round(requestedAmount * 100 - principalRemaining * 100)) / 100
+    : null;
+  const formatAmount = (value) =>
+    `${new Intl.NumberFormat(tr ? "tr-TR" : "en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(Number(value) || 0)} ${entry.currency || ""}`.trim();
   const submit = async (event) => {
     event.preventDefault();
     if (busy) return;
@@ -85,6 +98,19 @@ export default function RefundDialog({ entry, lang, onClose, onSaved }) {
         <p className="text-xs break-all">
           {entry.receiptNumber} · {entry.currency || "?"}
         </p>
+        <p className="text-xs">
+          {tr ? "Kalan hesap bedeli" : "Remaining bill amount"}: {formatAmount(principalRemaining)}
+          {tipRemaining > 0 && (
+            <>
+              <br />
+              {tr ? "İade edilebilir bahşiş" : "Refundable tip"}: {formatAmount(tipRemaining)}
+            </>
+          )}
+          <br />
+          {tr
+            ? "İade önce hesap bedeline, sonra bahşişe uygulanır."
+            : "Refunds apply to the bill amount first, then to the tip."}
+        </p>
         <label className="grid gap-1 text-sm">
           {tr ? "İade tutarı" : "Refund amount"}
           <input
@@ -96,6 +122,12 @@ export default function RefundDialog({ entry, lang, onClose, onSaved }) {
             onChange={(e) => setAmount(e.target.value)}
           />
         </label>
+        {tipRemaining > 0 && previewTipAmount !== null && previewTipAmount > 0 && (
+          <p className="text-xs" role="status">
+            {tr ? "Bu iadeye dahil olan bahşiş" : "Tip included in this refund"}:{" "}
+            {formatAmount(Math.min(tipRemaining, previewTipAmount))}
+          </p>
+        )}
         <label className="grid gap-1 text-sm">
           {tr ? "İade / düzeltme nedeni" : "Refund / correction reason"}
           <textarea

@@ -70,6 +70,7 @@ model Order {
   idempotencyKey String?   @unique
   requestFingerprint String?
   totalPrice  Decimal     @default(0)
+  tipAmount   Decimal     @default(0)
   discountPercent Decimal  @default(0)
   discountAmount  Decimal  @default(0)
   discountReason  String?
@@ -92,6 +93,7 @@ model OrderItem {
   menuItemId String
   menuItem   MenuItem  @relation(fields: [menuItemId], references: [id])
   quantity   Int       @default(1)
+  paidQuantity Int     @default(0)
   unitPrice  Decimal
   menuItemName String?
   menuItemCategoryName String?
@@ -112,6 +114,8 @@ model Payment {
   cashShiftId   String?
   cashShift     CashShift? @relation(fields: [cashShiftId], references: [id], onDelete: SetNull)
   amountPaid    Decimal
+  tipAmount     Decimal   @default(0)
+  itemsJson     String?
   paymentMethod String    // İzin verilen değerler: CASH, CREDIT_CARD, OTHER
   idempotencyKey String?
   requestFingerprint String?
@@ -166,6 +170,7 @@ model Refund {
   paymentId          String
   cashShiftId        String
   amount             Decimal
+  tipAmount          Decimal  @default(0)
   paymentMethod      String
   currency           String
   reason             String

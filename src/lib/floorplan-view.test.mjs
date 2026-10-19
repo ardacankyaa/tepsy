@@ -1,7 +1,49 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import {
+  clampRotatedFloorPlanPosition,
+  getRotatedFloorElementBounds,
+} from "../components/floorplan/geometry.mjs";
 import * as tablePresentation from "../components/floorplan/table-presentation.mjs";
+
+test("rotated floor element bounds include its visual footprint around the CSS anchor", () => {
+  assert.deepEqual(getRotatedFloorElementBounds(180, 14, 90), {
+    widthPx: 14,
+    heightPx: 180,
+    offsetX: 83,
+    offsetY: -83,
+  });
+
+  const diagonalWall = getRotatedFloorElementBounds(180, 14, 15);
+  assert.ok(diagonalWall.heightPx > 14);
+  assert.ok(diagonalWall.offsetY < 0);
+  assert.deepEqual(getRotatedFloorElementBounds(180, 14, 450), {
+    widthPx: 14,
+    heightPx: 180,
+    offsetX: 83,
+    offsetY: -83,
+  });
+});
+
+test("rotated element positions clamp the transformed bounds without shifting the grab anchor", () => {
+  const verticalWall = getRotatedFloorElementBounds(180, 14, 90);
+  const leftPosition = clampRotatedFloorPlanPosition(0, 720, 180, verticalWall.widthPx);
+  const rightPosition = clampRotatedFloorPlanPosition(100, 720, 180, verticalWall.widthPx);
+  const topPosition = clampRotatedFloorPlanPosition(0, 450, 14, verticalWall.heightPx);
+  const bottomPosition = clampRotatedFloorPlanPosition(100, 450, 14, verticalWall.heightPx);
+
+  assert.equal(leftPosition, 0);
+  assert.ok(Math.abs(rightPosition - ((720 - 14 - 83) / 720) * 100) < 1e-9);
+  assert.ok(Math.abs(topPosition - (83 / 450) * 100) < 1e-9);
+  assert.ok(Math.abs(bottomPosition - ((450 - 180 + 83) / 450) * 100) < 1e-9);
+
+  const topVisualEdge = (topPosition * 450) / 100 + verticalWall.offsetY;
+  const bottomVisualEdge =
+    (bottomPosition * 450) / 100 + verticalWall.offsetY + verticalWall.heightPx;
+  assert.ok(Math.abs(topVisualEdge) < 1e-9);
+  assert.ok(Math.abs(bottomVisualEdge - 450) < 1e-9);
+});
 
 test("table status presentation keeps service state and selection styling aligned", () => {
   assert.equal(typeof tablePresentation.getTableStatusPresentation, "function");

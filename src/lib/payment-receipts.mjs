@@ -44,6 +44,8 @@ export function buildPaymentReceipt({ response, restaurant, cardVerification, ac
   const amountPaidCents = sumCents(
     response.payments.map((entry) => moneyToCents(entry.amountPaid))
   );
+  const tipCents = sumCents(response.payments.map((p) => moneyToCents(p.tipAmount || 0)));
+  const paymentItems = response.payments.flatMap((p) => p.items || []);
   return {
     id: payment.id,
     receiptNumber: receiptNumber(payment.id),
@@ -60,6 +62,9 @@ export function buildPaymentReceipt({ response, restaurant, cardVerification, ac
     section: response.table?.section || orders.find((order) => order.table)?.table?.section || null,
     orderIds: orders.map((order) => order.id),
     items: receiptItems(orders),
+    paymentItems,
+    tipAmount: centsToMoney(tipCents),
+    collectedTotal: centsToMoney(amountPaidCents + tipCents),
     grossTotal: centsToMoney(sumCents(balances.map((balance) => balance.grossCents))),
     discountAmount: centsToMoney(sumCents(balances.map((balance) => balance.discountCents))),
     netTotal: centsToMoney(sumCents(balances.map((balance) => balance.netCents))),
@@ -294,6 +299,8 @@ function publicHistoryEntry(row) {
     orderIds: receipt.orderIds,
     amountPaid,
     paymentMethod: receipt.paymentMethod,
+    tipAmount: receipt.tipAmount || "0.00",
+    collectedTotal: receipt.collectedTotal || amountPaid,
     createdAt: receipt.timestamp,
     remainingBalance: receipt.remainingBalance,
     receiptAvailable: true,
@@ -322,7 +329,9 @@ export async function listPaymentHistory(client, parsed) {
     parsed.orderIds.length
       ? client.$queryRawUnsafe(
           `${scope.sql}
-      SELECT o.id, o.totalPrice, o.discountAmount, SUM(CAST(ROUND(p.amountPaid * 100) AS INTEGER)) AS paidCents
+      SELECT o.id, o.totalPrice, o.discountAmount, o.tipAmount,
+        SUM(CAST(ROUND(p.amountPaid * 100) AS INTEGER)) AS paidCents,
+        SUM(CAST(ROUND(p.tipAmount * 100) AS INTEGER)) AS tipPaidCents
       FROM "Order" o LEFT JOIN Payment p ON p.orderId = o.id
       WHERE o.id IN (SELECT orderId FROM connected) AND o.status != 'CANCELLED' ${parsed.tableId ? "AND o.tableId = ?" : ""}
       GROUP BY o.id ORDER BY o.id ASC`,
@@ -348,6 +357,13 @@ export async function listPaymentHistory(client, parsed) {
       payments: [{ amountPaid: centsToMoney(databaseCents(order.paidCents)) }],
     })
   );
+  const remainingTipCents = accountRows
+    ? Math.max(
+        0,
+        sumCents(accountRows.map((order) => moneyToCents(order.tipAmount || 0))) -
+          sumCents(accountRows.map((order) => databaseCents(order.tipPaidCents)))
+      )
+    : 0;
   const entries = selected.map(publicHistoryEntry);
   const refunds = entries.length
     ? await client.refund.findMany({
@@ -356,6 +372,7 @@ export async function listPaymentHistory(client, parsed) {
           id: true,
           paymentId: true,
           amount: true,
+          tipAmount: true,
           currency: true,
           reason: true,
           actorName: true,
@@ -368,10 +385,17 @@ export async function listPaymentHistory(client, parsed) {
     payments: entries.map((entry) => {
       const rows = refunds.filter((r) => r.paymentId === entry.id);
       const refunded = rows.reduce((n, r) => n + moneyToCents(r.amount), 0);
+      const refundedTip = rows.reduce((n, r) => n + moneyToCents(r.tipAmount || 0), 0);
+      const refundedPrincipal = Math.max(0, refunded - refundedTip);
+      const refundablePrincipal = Math.max(0, moneyToCents(entry.amountPaid) - refundedPrincipal);
+      const refundableTip = Math.max(0, moneyToCents(entry.tipAmount || 0) - refundedTip);
       return {
         ...entry,
         refundedAmount: centsToMoney(refunded),
-        refundableAmount: centsToMoney(moneyToCents(entry.amountPaid) - refunded),
+        refundedTipAmount: centsToMoney(refundedTip),
+        refundableAmount: centsToMoney(refundablePrincipal + refundableTip),
+        refundablePrincipalAmount: centsToMoney(refundablePrincipal),
+        refundableTipAmount: centsToMoney(refundableTip),
         refunds: rows,
       };
     }),
@@ -405,6 +429,7 @@ export async function listPaymentHistory(client, parsed) {
           remainingBalance: centsToMoney(
             sumCents(balances.map((balance) => balance.remainingCents))
           ),
+          remainingTipAmount: centsToMoney(remainingTipCents),
           orderIds: accountRows.map((order) => order.id),
         }
       : null,

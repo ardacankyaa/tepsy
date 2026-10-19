@@ -113,6 +113,18 @@ export function buildReceiptEscPos(receipt, options = {}) {
           amountLine("KALAN", receipt.remainingBalance),
         ]
       : [amountLine("TOPLAM", receipt.totalAmount)]),
+    ...(Number(receipt.tipAmount) > 0
+      ? [
+          amountLine("BAHSIS", receipt.tipAmount),
+          amountLine("BAHSIS DAHIL", receipt.collectedTotal),
+        ]
+      : []),
+    ...(receipt.paymentItems?.length
+      ? [
+          "BU ODEMEDEKI URUNLER",
+          ...receipt.paymentItems.flatMap((i) => wrap(`${i.quantity}x ${i.name}`, width)),
+        ]
+      : []),
     ...(receipt.kind === "BILL"
       ? []
       : [

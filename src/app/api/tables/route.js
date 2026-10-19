@@ -11,6 +11,7 @@ import { sessionFromRequest } from "@/lib/auth-local";
 import { validateTableDimensions } from "@/lib/floorplan-data.cjs";
 import { preferTableOrderItemNameSnapshots } from "@/lib/order-idempotency-server.mjs";
 import { normalizeTableInput, TableInputError } from "@/lib/table-input.cjs";
+import { itemAvailability } from "@/lib/item-payments.mjs";
 
 export async function GET(req) {
   try {
@@ -32,7 +33,15 @@ export async function GET(req) {
             status: { notIn: ["PAID", "CANCELLED", "AWAITING_WAITER_APPROVAL"] },
           },
           include: {
-            payments: { select: { amountPaid: true, paymentMethod: true, createdAt: true } },
+            payments: {
+              select: {
+                amountPaid: true,
+                tipAmount: true,
+                itemsJson: true,
+                paymentMethod: true,
+                createdAt: true,
+              },
+            },
             items: {
               where: { status: { not: "CANCELLED" } },
               include: {
@@ -46,7 +55,11 @@ export async function GET(req) {
       },
     });
 
-    return NextResponse.json(tables.map(preferTableOrderItemNameSnapshots));
+    return NextResponse.json(
+      tables
+        .map(preferTableOrderItemNameSnapshots)
+        .map((t) => ({ ...t, orders: t.orders.map(itemAvailability) }))
+    );
   } catch (error) {
     console.error("GET /api/tables error:", error);
     return NextResponse.json({ error: "Masalar listelenemedi" }, { status: 500 });

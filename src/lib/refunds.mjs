@@ -37,6 +37,34 @@ export function parseRefund(body) {
     .digest("hex");
   return { paymentId, idempotencyKey, reason, amountCents, fingerprint };
 }
+
+export function refundPrincipalCents(refund) {
+  const amountCents = moneyToCents(refund.amount);
+  const tipCents = moneyToCents(refund.tipAmount || 0);
+  if (tipCents > amountCents)
+    throw new PaymentRequestError(500, "invalid-refund", "İade bahşiş tutarı geçersiz.");
+  return amountCents - tipCents;
+}
+
+export function summarizeRefunds(refunds, paymentMethod) {
+  return refunds
+    .filter((refund) => !paymentMethod || refund.paymentMethod === paymentMethod)
+    .reduce(
+      (totals, refund) => {
+        const amountCents = moneyToCents(refund.amount);
+        const tipCents = moneyToCents(refund.tipAmount || 0);
+        if (tipCents > amountCents)
+          throw new PaymentRequestError(500, "invalid-refund", "İade bahşiş tutarı geçersiz.");
+        return {
+          amountCents: totals.amountCents + amountCents,
+          tipCents: totals.tipCents + tipCents,
+          principalCents: totals.principalCents + refundPrincipalCents(refund),
+        };
+      },
+      { amountCents: 0, tipCents: 0, principalCents: 0 }
+    );
+}
+
 export async function refundPayment(tx, input, actor) {
   const replay = await tx.refund.findUnique({ where: { idempotencyKey: input.idempotencyKey } });
   if (replay) {
@@ -63,10 +91,23 @@ export async function refundPayment(tx, input, actor) {
     );
   if (!canonical) throw new PaymentRequestError(404, "payment-not-found", "Tahsilat bulunamadı.");
   const refunds = await tx.refund.findMany({ where: { paymentId: receipt.id } });
-  const remaining =
-    moneyToCents(receipt.amountPaid) - refunds.reduce((n, r) => n + moneyToCents(r.amount), 0);
-  if (input.amountCents > remaining)
+  const refundedTotals = summarizeRefunds(refunds);
+  const principalRefundedCents = refundedTotals.principalCents;
+  const tipRefundedCents = refundedTotals.tipCents;
+  const principalPaidCents = moneyToCents(receipt.amountPaid);
+  const tipPaidCents = moneyToCents(receipt.tipAmount || 0);
+  const totalPaidCents =
+    receipt.collectedTotal == null ? principalPaidCents : moneyToCents(receipt.collectedTotal);
+  const principalRemainingCents = Math.max(0, principalPaidCents - principalRefundedCents);
+  const tipRemainingCents = Math.max(0, tipPaidCents - tipRefundedCents);
+  const remaining = Math.max(0, totalPaidCents - refundedTotals.amountCents);
+  if (
+    input.amountCents > remaining ||
+    input.amountCents > principalRemainingCents + tipRemainingCents
+  )
     throw new PaymentRequestError(409, "over-refund", "İade tutarı kalan tahsilatı aşıyor.");
+  const refundTipCents = Math.max(0, input.amountCents - principalRemainingCents);
+  const refundPrincipalAmountCents = input.amountCents - refundTipCents;
   if (receipt.paymentMethod === "CASH") {
     const payments = await tx.payment.findMany({
       where: { cashShiftId: shift.id, paymentMethod: "CASH" },
@@ -76,7 +117,10 @@ export async function refundPayment(tx, input, actor) {
     });
     const cash =
       moneyToCents(shift.openingCash) +
-      payments.reduce((n, p) => n + moneyToCents(p.amountPaid), 0) -
+      payments.reduce(
+        (n, p) => n + moneyToCents(p.amountPaid) + moneyToCents(p.tipAmount || 0),
+        0
+      ) -
       paidRefunds.reduce((n, r) => n + moneyToCents(r.amount), 0);
     if (input.amountCents > cash)
       throw new PaymentRequestError(
@@ -91,12 +135,18 @@ export async function refundPayment(tx, input, actor) {
     paymentId: receipt.id,
     receiptNumber: `TPS-R-${id.toUpperCase()}`,
     amount: centsToMoney(input.amountCents),
+    principalAmount: centsToMoney(refundPrincipalAmountCents),
+    tipAmount: centsToMoney(refundTipCents),
     currency: receipt.currency,
     paymentMethod: receipt.paymentMethod,
     reason: input.reason,
     ...actor,
     createdAt: new Date().toISOString(),
     remainingRefundable: centsToMoney(remaining - input.amountCents),
+    remainingPrincipalRefundable: centsToMoney(
+      principalRemainingCents - refundPrincipalAmountCents
+    ),
+    remainingTipRefundable: centsToMoney(tipRemainingCents - refundTipCents),
     externalRefundRecorded: true,
   };
   await tx.refund.create({
@@ -105,6 +155,7 @@ export async function refundPayment(tx, input, actor) {
       paymentId: receipt.id,
       cashShiftId: shift.id,
       amount: response.amount,
+      tipAmount: response.tipAmount,
       currency: receipt.currency,
       paymentMethod: receipt.paymentMethod,
       reason: input.reason,
@@ -122,6 +173,8 @@ export async function refundPayment(tx, input, actor) {
       detailsJson: JSON.stringify({
         refundId: id,
         amount: response.amount,
+        principalAmount: response.principalAmount,
+        tipAmount: response.tipAmount,
         currency: receipt.currency,
         reason: input.reason,
       }),

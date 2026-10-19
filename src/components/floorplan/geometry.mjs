@@ -56,3 +56,33 @@ export function clampFloorPlanPosition(value, containerSize, itemSize, outerInse
   const maxPercent = Math.max(marginPercent, 100 - itemPercent - insetPercent);
   return Math.max(marginPercent, Math.min(maxPercent, value));
 }
+
+export function getRotatedFloorElementBounds(widthPx, heightPx, rotation = 0) {
+  const width = Math.max(0, Number(widthPx) || 0);
+  const height = Math.max(0, Number(heightPx) || 0);
+  const angle = Number(rotation);
+  const normalizedAngle = Number.isFinite(angle) ? ((Math.round(angle) % 360) + 360) % 360 : 0;
+  const radians = (normalizedAngle * Math.PI) / 180;
+  const cosine = Math.abs(Math.cos(radians));
+  const sine = Math.abs(Math.sin(radians));
+  const stableCosine = cosine < 1e-10 ? 0 : cosine;
+  const stableSine = sine < 1e-10 ? 0 : sine;
+  const rotatedWidthPx = width * stableCosine + height * stableSine;
+  const rotatedHeightPx = width * stableSine + height * stableCosine;
+
+  return {
+    widthPx: rotatedWidthPx,
+    heightPx: rotatedHeightPx,
+    offsetX: (width - rotatedWidthPx) / 2,
+    offsetY: (height - rotatedHeightPx) / 2,
+  };
+}
+
+export function clampRotatedFloorPlanPosition(value, containerSize, elementSize, rotatedSize) {
+  if (!(containerSize > 0)) return value;
+  const rotatedPercent = (rotatedSize / containerSize) * 100;
+  const anchorOffsetPercent = ((elementSize - rotatedSize) / (2 * containerSize)) * 100;
+  const minPercent = Math.max(0, -anchorOffsetPercent);
+  const maxPercent = Math.max(minPercent, 100 - rotatedPercent - anchorOffsetPercent);
+  return clamp(value, minPercent, maxPercent);
+}

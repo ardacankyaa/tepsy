@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Checkout supports selecting specific order items and quantities, with server-calculated discounts, paid quantities, immutable item receipts and replay protection.
+- Voluntary QR tip requests are confirmed at POS; collected tips remain separate from bill balances and are included in receipts, drawer reconciliation and reports.
+- Floor elements have an exact angle control and stable independent rotation while editing and saving.
 - Login offers local owner recovery with expiring single-use proof and staff PIN guidance.
 - Owners can create independent restaurant installations without resetting existing data; instance cookies and configuration are isolated.
 - Report currency controls stay available across date changes, pending requests and load failures, including unknown historical currency.

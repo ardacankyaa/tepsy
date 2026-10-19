@@ -184,6 +184,8 @@ function PublicCart({
   orderAttempt,
   orderAttemptReady,
   orderNotes,
+  tipAmount,
+  onTipChange,
 }) {
   const isTr = lang === "tr";
   const orderNoteId = useId();
@@ -272,9 +274,27 @@ function PublicCart({
             maxLength={500}
             rows={3}
           />
+          <label className="qr-tip-field">
+            {isTr ? "Bahşiş (isteğe bağlı)" : "Tip (optional)"}
+            <input
+              type="text"
+              inputMode="decimal"
+              value={tipAmount}
+              onChange={(e) => onTipChange(e.target.value)}
+              disabled={Boolean(orderAttempt) || orderBusy || !orderAttemptReady}
+              placeholder="0.00"
+            />
+          </label>
+          <p className="qr-cart-guidance">
+            {isTr
+              ? "Bahşiş kasada onaylanarak tahsil edilir. Şimdi kartınızdan çekim yapılmaz."
+              : "The tip is confirmed and collected at checkout."}
+          </p>
           <div className="service-total-row service-total-emphasis">
             <span>{copy.total}</span>
-            <strong>{formatPrice(cartTotal)}</strong>
+            <strong>
+              {formatPrice(cartTotal + (Number(String(tipAmount).replace(",", ".")) || 0))}
+            </strong>
           </div>
           <button
             type="button"
@@ -320,6 +340,7 @@ export default function PublicMenuPage() {
   const [cart, setCart] = useState({});
   const [cartOpen, setCartOpen] = useState(false);
   const [orderNotes, setOrderNotes] = useState("");
+  const [tipAmount, setTipAmount] = useState("");
   const [orderBusy, setOrderBusy] = useState(false);
   const [orderAttempt, setOrderAttempt] = useState(null);
   const [orderAttemptReady, setOrderAttemptReady] = useState(false);
@@ -387,6 +408,7 @@ export default function PublicMenuPage() {
         )
       );
       setOrderNotes(payload.orderNotes || "");
+      setTipAmount(payload.tipAmount || "");
     }
     setOrderAttemptReady(true);
   }, [orderAttemptStorageKey, token]);
@@ -538,10 +560,21 @@ export default function PublicMenuPage() {
     if (!token || orderBusy || !orderAttemptReady) return;
     const existingAttempt = orderAttemptRef.current;
     if (!existingAttempt && (!menu?.orderingEnabled || !cartItems.length)) return;
+    if (!existingAttempt && !/^\d+(?:[.,]\d{1,2})?$/.test(String(tipAmount || "0").trim())) {
+      setNotice({
+        tone: "error",
+        text:
+          lang === "tr"
+            ? "Bahşiş sıfır veya pozitif ve en fazla iki ondalık basamaklı olmalıdır."
+            : "Enter a nonnegative tip with up to two decimal places.",
+      });
+      return;
+    }
     const payload = {
       token,
       items: cartItems.map(({ id, quantity }) => ({ menuItemId: id, quantity })),
       orderNotes: orderNotes.trim(),
+      tipAmount: String(tipAmount || "0").replace(",", "."),
     };
     const attempt =
       existingAttempt ||
@@ -576,6 +609,7 @@ export default function PublicMenuPage() {
       setOrderAttempt(null);
       setCart({});
       setOrderNotes("");
+      setTipAmount("");
       setCartOpen(false);
       const nextPendingOrderId = data.orderId || "";
       setPendingOrderId(nextPendingOrderId);
@@ -709,6 +743,8 @@ export default function PublicMenuPage() {
     orderAttempt,
     orderAttemptReady,
     orderNotes,
+    tipAmount,
+    onTipChange: setTipAmount,
   };
 
   return (
@@ -1053,7 +1089,9 @@ export default function PublicMenuPage() {
       <div className="service-mobile-action-bar service-qr-mobile-action">
         <div>
           <span>{copy.cart}</span>
-          <strong>{formatPrice(cartTotal)}</strong>
+          <strong>
+            {formatPrice(cartTotal + (Number(String(tipAmount).replace(",", ".")) || 0))}
+          </strong>
         </div>
         <button
           type="button"

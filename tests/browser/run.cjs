@@ -32,6 +32,7 @@ const checks = [
   "report-currency",
   "recovery-status",
   "login-help",
+  "product-payments",
 ];
 const requested = process.argv.slice(2);
 const selected = requested.length ? requested : checks;

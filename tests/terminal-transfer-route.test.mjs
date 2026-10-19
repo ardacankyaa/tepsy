@@ -27,6 +27,7 @@ function route({ denied = false, shift = true, enabled = true } = {}) {
       $transaction: (fn) => fn({}),
     },
     parsePaymentRequest,
+    PaymentRequestError,
     requireOpenCashShift,
     readDeviceConfig: async () => {
       configReads++;
@@ -74,6 +75,18 @@ test("terminal transfer uses server account reads without recording a payment or
   });
   assert.equal(tampered.status, 400);
   assert.equal(handler.counts().sends, 1);
+});
+test("direct selected-item and tipped requests cannot read or send a TokenX basket", async () => {
+  const handler = route();
+  for (const request of [
+    { ...payment, selectedItems: [{ orderItemId: "line-1", quantity: 1 }] },
+    { ...payment, tipAmount: "2.50" },
+  ]) {
+    const result = await handler.post({ json: async () => request });
+    assert.equal(result.status, 409);
+    assert.equal(result.data.code, "terminal-selection-unsupported");
+  }
+  assert.deepEqual(handler.counts(), { sends: 0, configReads: 0, accountReads: 0 });
 });
 test("closed shifts block terminal export and disabled adapters do not send anything", async () => {
   const closed = route({ shift: false });

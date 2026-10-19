@@ -13,10 +13,11 @@ import sqlite3
 
 ADDITIONS = {"Order": ("idempotencyKey", "requestFingerprint"), "OrderItem": ("menuItemName", "menuItemCategoryName"), "RestaurantConfig": ("restaurantLogoUrl",)}
 SHIFT_ADDITIONS = {"cashRefunds": "DECIMAL NOT NULL DEFAULT 0", "cardRefunds": "DECIMAL NOT NULL DEFAULT 0", "otherRefunds": "DECIMAL NOT NULL DEFAULT 0", "refundsSnapshot": "TEXT NOT NULL DEFAULT '[]'"}
+PAYMENT_ADDITIONS = {"Order": {"tipAmount": "DECIMAL NOT NULL DEFAULT 0"}, "OrderItem": {"paidQuantity": "INTEGER NOT NULL DEFAULT 0"}, "Payment": {"tipAmount": "DECIMAL NOT NULL DEFAULT 0", "itemsJson": "TEXT"}, "Refund": {"tipAmount": "DECIMAL NOT NULL DEFAULT 0"}}
 NEW_TABLES = '''
 CREATE TABLE IF NOT EXISTS "Refund" (
   "id" TEXT NOT NULL PRIMARY KEY, "paymentId" TEXT NOT NULL,
-  "cashShiftId" TEXT NOT NULL, "amount" DECIMAL NOT NULL,
+  "cashShiftId" TEXT NOT NULL, "amount" DECIMAL NOT NULL, "tipAmount" DECIMAL NOT NULL DEFAULT 0,
   "paymentMethod" TEXT NOT NULL, "currency" TEXT NOT NULL,
   "reason" TEXT NOT NULL, "actorId" TEXT NOT NULL, "actorName" TEXT NOT NULL,
   "idempotencyKey" TEXT NOT NULL, "requestFingerprint" TEXT NOT NULL,
@@ -47,6 +48,10 @@ def needs_upgrade(database):
         if not columns(connection, "Refund") or not columns(connection, "AuditEvent"):
             return True
         shift_columns = columns(connection, "CashShift")
+        for table, fields in PAYMENT_ADDITIONS.items():
+            existing = columns(connection, table)
+            if existing and not set(fields).issubset(existing):
+                return True
         if shift_columns and not set(SHIFT_ADDITIONS).issubset(shift_columns):
             return True
         for table, fields in ADDITIONS.items():
@@ -77,6 +82,12 @@ def upgrade(database, backup_directory):
                 if statement.strip():
                     connection.execute(statement)
             shift_columns = columns(connection, "CashShift")
+            for table, fields in PAYMENT_ADDITIONS.items():
+                existing = columns(connection, table)
+                if existing:
+                    for field, declaration in fields.items():
+                        if field not in existing:
+                            connection.execute(f'ALTER TABLE "{table}" ADD COLUMN "{field}" {declaration}')
             if shift_columns:
                 for field, declaration in SHIFT_ADDITIONS.items():
                     if field not in shift_columns:

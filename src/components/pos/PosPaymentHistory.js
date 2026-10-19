@@ -210,12 +210,23 @@ export default function PosPaymentHistory({
               </div>
               <strong className="pos-history-amount">
                 {historicalAmount(entry.amountPaid, entry.currency)}
+                {Number(entry.tipAmount) > 0 && (
+                  <small style={{ display: "block" }}>
+                    {tr ? "Bahşiş" : "Tip"}: {historicalAmount(entry.tipAmount, entry.currency)}
+                  </small>
+                )}
               </strong>
               <div className="pos-history-actions">
                 {Number(entry.refundedAmount || 0) > 0 && (
                   <span className="text-xs">
                     {tr ? "İade: " : "Refunded: "}
                     {historicalAmount(entry.refundedAmount, entry.currency)}
+                    {Number(entry.refundedTipAmount || 0) > 0 && (
+                      <small style={{ display: "block" }}>
+                        {tr ? "Bunun bahşiş kısmı: " : "Tip portion: "}
+                        {historicalAmount(entry.refundedTipAmount, entry.currency)}
+                      </small>
+                    )}
                   </span>
                 )}
                 {canRefund &&

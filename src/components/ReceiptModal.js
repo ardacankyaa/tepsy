@@ -239,6 +239,24 @@ export default function ReceiptModal({ isOpen, onClose, data }) {
               <dd>{formatPrice(recorded ? amountPaid : totalAmount)}</dd>
             </div>
           )}
+          {Number(data.tipAmount) > 0 && (
+            <>
+              <div>
+                <dt>{lang === "tr" ? "Bahşiş" : "Tip"}</dt>
+                <dd>{formatPrice(data.tipAmount)}</dd>
+              </div>
+              <div className="is-paid">
+                <dt>{lang === "tr" ? "Bahşiş dahil tahsilat" : "Collected including tip"}</dt>
+                <dd>{formatPrice(data.collectedTotal)}</dd>
+              </div>
+            </>
+          )}
+          {data.paymentItems?.length > 0 && (
+            <div>
+              <dt>{lang === "tr" ? "Bu ödemedeki ürünler" : "Items in this payment"}</dt>
+              <dd>{data.paymentItems.map((i) => `${i.quantity}× ${i.name}`).join(", ")}</dd>
+            </div>
+          )}
           {data.kind !== "BILL" && (
             <div>
               <dt>{t("paymentMethod")}</dt>

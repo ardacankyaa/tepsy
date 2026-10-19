@@ -225,7 +225,7 @@ async function assertControlsFit(scope, label) {
     "secondary discount tools start closed"
   );
   assert.equal(
-    await page.locator(".pos-split-payments").isVisible(),
+    await page.locator("section.pos-split-payments").isVisible(),
     false,
     "full payment is the default path"
   );
@@ -244,8 +244,11 @@ async function assertControlsFit(scope, label) {
         (theme) => document.documentElement.setAttribute("data-theme", theme),
         theme
       );
-      await assertControlsFit(page.locator(".pos-split-payments"), `split ${width}px ${theme}`);
-      await page.locator(".pos-split-payments").scrollIntoViewIfNeeded();
+      await assertControlsFit(
+        page.locator("section.pos-split-payments"),
+        `split ${width}px ${theme}`
+      );
+      await page.locator("section.pos-split-payments").scrollIntoViewIfNeeded();
       await page.screenshot({
         path: path.join(output, `split-plan-${width}-${theme}.png`),
         fullPage: true,
@@ -424,10 +427,10 @@ async function assertControlsFit(scope, label) {
         theme
       );
       await assertControlsFit(
-        page.locator(".pos-split-payments"),
+        page.locator("section.pos-split-payments"),
         `English split ${width}px ${theme}`
       );
-      await page.locator(".pos-split-payments").scrollIntoViewIfNeeded();
+      await page.locator("section.pos-split-payments").scrollIntoViewIfNeeded();
       await page.screenshot({
         path: path.join(output, `split-plan-en-${width}-${theme}.png`),
         fullPage: true,

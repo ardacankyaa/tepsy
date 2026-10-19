@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
+import { moneyToCents, centsToMoney } from "@/lib/finance.mjs";
 import { Prisma } from "@prisma/client";
 import prisma from "@/lib/db";
 import { readRequestJson } from "@/lib/request-json.mjs";
@@ -68,7 +69,19 @@ export async function POST(request) {
     if (notes === undefined) {
       return NextResponse.json({ error: "Sipariş notu geçersiz." }, { status: 400 });
     }
-    const payload = { tableId: null, items, notes };
+    let tipCents;
+    try {
+      tipCents = moneyToCents(body.tipAmount ?? 0);
+      if (tipCents > 100000000) throw new Error();
+    } catch {
+      return NextResponse.json({ error: "Bahşiş tutarı geçersiz." }, { status: 400 });
+    }
+    const payload = {
+      tableId: null,
+      items,
+      notes,
+      ...(tipCents ? { tipAmount: centsToMoney(tipCents) } : {}),
+    };
     requestFingerprint = idempotencyKey ? orderRequestFingerprint("QR", payload) : null;
 
     const createOrder = () =>
@@ -134,6 +147,7 @@ export async function POST(request) {
             status: "AWAITING_WAITER_APPROVAL",
             source: "QR",
             totalPrice,
+            tipAmount: centsToMoney(tipCents),
             notes,
             ...(idempotencyKey && { idempotencyKey, requestFingerprint }),
             items: { create: orderItems },

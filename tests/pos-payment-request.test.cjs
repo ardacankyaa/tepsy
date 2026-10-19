@@ -2,6 +2,22 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { createPaymentRequest } = require("../src/lib/pos-payment-request.cjs");
 
+test("item selection sends identifiers and quantities with a separate tip, never client prices", () => {
+  const input = {
+    tableId: "t",
+    paymentMethod: "CASH",
+    idempotencyKey: "selected-1",
+    selectedItems: [{ orderItemId: "item", quantity: 2 }],
+    tipAmount: "10,50",
+  };
+  const p = createPaymentRequest(input);
+  assert.deepEqual(p.selectedItems, input.selectedItems);
+  assert.equal(p.tipAmount, "10.50");
+  assert.equal(p.amountPaid, undefined);
+  assert.equal(createPaymentRequest({ ...input, partialAmount: "30" }), null);
+  assert.equal(createPaymentRequest({ ...input, tipAmount: "-1" }), null);
+});
+
 test("full payment delegates the remaining balance to the server", () => {
   assert.deepEqual(
     createPaymentRequest({

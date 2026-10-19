@@ -1,5 +1,7 @@
 "use client";
 
+import { getRotatedFloorElementBounds } from "@/components/floorplan/geometry.mjs";
+
 const ELEMENT_LABELS = {
   WALL: { tr: "Duvar", en: "Wall" },
   DOOR: { tr: "Kapı", en: "Door" },
@@ -17,6 +19,12 @@ export function getFloorElementLabel(element, lang = "tr") {
 }
 
 export const FLOOR_ELEMENT_TYPES = Object.keys(ELEMENT_LABELS);
+
+export function normalizeFloorElementRotation(value) {
+  const angle = Number(value);
+  if (!Number.isFinite(angle)) return 0;
+  return ((Math.round(angle) % 360) + 360) % 360;
+}
 
 export const FLOOR_ELEMENT_DEFAULTS = {
   WALL: { width: 180, height: 14 },
@@ -134,13 +142,25 @@ export default function FloorElement({
 }) {
   const label = getFloorElementLabel(element, lang);
   const content = <ElementArtwork type={element.type} label={element.label} lang={lang} />;
+  const rotation = normalizeFloorElementRotation(element.rotation);
+  const rotatedBounds = getRotatedFloorElementBounds(
+    dimensions.widthPx,
+    dimensions.heightPx,
+    rotation
+  );
+  const horizontalOffset = (dimensions.widthPx - rotatedBounds.widthPx) / 2;
+  const verticalOffset = (dimensions.heightPx - rotatedBounds.heightPx) / 2;
+  const getClampedPosition = (position, rotatedSizePx, anchorOffsetPx) => {
+    const minimumPx = Math.max(0, -anchorOffsetPx);
+    return `clamp(${minimumPx}px, ${Number(position) || 0}%, max(${minimumPx}px, calc(100% - ${rotatedSizePx}px - ${anchorOffsetPx}px)))`;
+  };
   const sharedProps = {
     style: {
-      left: `clamp(0px, ${Number(element.posX) || 0}%, calc(100% - ${dimensions.widthPx}px))`,
-      top: `clamp(0px, ${Number(element.posY) || 0}%, calc(100% - ${dimensions.heightPx}px))`,
+      left: getClampedPosition(element.posX, rotatedBounds.widthPx, horizontalOffset),
+      top: getClampedPosition(element.posY, rotatedBounds.heightPx, verticalOffset),
       width: `${dimensions.widthPx}px`,
       height: `${dimensions.heightPx}px`,
-      transform: `rotate(${Number(element.rotation) || 0}deg)`,
+      rotate: `${rotation}deg`,
     },
     className: `absolute z-[2] origin-center ${selected ? "rounded-md outline outline-2 outline-offset-2 outline-[#24543e]" : ""} ${editable ? "cursor-grab touch-none active:cursor-grabbing" : "pointer-events-none"}`,
   };

@@ -129,6 +129,7 @@ let browser, page;
   );
   assert.ok((await cart.locator(".service-line-price").innerText()).includes("2.500,00"));
   await cart.getByLabel("Sipariş notu (isteğe bağlı)", { exact: false }).fill("Sade olsun");
+  await cart.getByLabel("Bahşiş (isteğe bağlı)", { exact: true }).fill("10,50");
   await cart.getByRole("button", { name: "Siparişi gönder", exact: true }).click();
   await cart.getByRole("button", { name: "Aynı siparişi yeniden dene", exact: true }).waitFor();
   assert.equal(
@@ -138,6 +139,8 @@ let browser, page;
   await cart.getByRole("button", { name: "Aynı siparişi yeniden dene", exact: true }).click();
   await page.getByTestId("qr-order-pending").waitFor();
   assert.equal(attempts.length, 2);
+  assert.equal(JSON.parse(attempts[0]).tipAmount, "10.50");
+  assert.equal(JSON.parse(attempts[1]).tipAmount, "10.50");
   assert.equal(
     attempts[0],
     attempts[1],

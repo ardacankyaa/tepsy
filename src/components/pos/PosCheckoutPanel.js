@@ -12,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { ScrollPanel } from "@/components/ui/Workspace";
+import PosItemPayments from "./PosItemPayments";
 import PosSplitPayments from "./PosSplitPayments";
 import PosPaymentHistory from "./PosPaymentHistory";
 
@@ -28,6 +29,8 @@ export default function PosCheckoutPanel({ checkout, actions, formatPrice, t }) 
     discountPercent,
     discountReason,
     partialAmount,
+    selectedItems,
+    tipAmount,
     isProcessingPayment,
     currentShift,
     finalTotalAmount,
@@ -47,6 +50,8 @@ export default function PosCheckoutPanel({ checkout, actions, formatPrice, t }) 
     previewReceipt,
     setDiscountReason,
     setPartialAmount,
+    setSelectedItems,
+    setTipAmount,
     handlePayment,
     onReceipt,
     onAccountChange,
@@ -376,6 +381,32 @@ export default function PosCheckoutPanel({ checkout, actions, formatPrice, t }) 
                     : "Discount is fixed after the first payment."}
                 </p>
               )}
+              <PosItemPayments
+                orders={activeOrders}
+                selection={selectedItems}
+                onChange={setSelectedItems}
+                busy={isProcessingPayment}
+                lang={lang}
+                formatPrice={formatPrice}
+                discountPercent={discountPercent}
+                tipAmount={tipAmount}
+              />
+              <label className="pos-partial-field">
+                <span>{lang === "tr" ? "Bahşiş (isteğe bağlı)" : "Tip (optional)"}</span>
+                <small>
+                  {lang === "tr"
+                    ? "QR isteğindeki bahşiş burada düzenlenebilir. Hesap bedeline ek tahsil edilir."
+                    : "Confirm or edit the QR tip. Collected in addition to the bill payment."}
+                </small>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={tipAmount}
+                  onChange={(e) => setTipAmount(e.target.value)}
+                  disabled={isProcessingPayment}
+                  placeholder="0.00"
+                />
+              </label>
               <details className="pos-options pos-split-disclosure" open={Boolean(partialAmount)}>
                 <summary>
                   {lang === "tr" ? "Hesabı böl / özel tutar" : "Split or custom amount"}
@@ -399,6 +430,19 @@ export default function PosCheckoutPanel({ checkout, actions, formatPrice, t }) 
                     {Number.isFinite(Number(partialAmount.replace(",", ".")))
                       ? formatPrice(Number(partialAmount.replace(",", ".")))
                       : "—"}
+                  </strong>
+                </div>
+              )}
+              {!selectedItems?.length && Number(String(tipAmount || 0).replace(",", ".")) > 0 && (
+                <div className="pos-collection-amount" role="status">
+                  <span>
+                    {lang === "tr" ? "Bahşiş dahil bu tahsilat" : "This collection including tip"}
+                  </span>
+                  <strong>
+                    {formatPrice(
+                      (partialAmount ? Number(partialAmount.replace(",", ".")) : finalTotalAmount) +
+                        Number(String(tipAmount).replace(",", "."))
+                    )}
                   </strong>
                 </div>
               )}

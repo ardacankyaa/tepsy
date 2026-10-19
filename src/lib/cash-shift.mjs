@@ -127,7 +127,12 @@ export function calculateCashShiftClose({
   let otherPaymentsCents = 0;
   const snapshot = payments
     .map((payment) => {
-      const amountCents = exactMoneyCents(payment.amountPaid);
+      const tipCents = exactMoneyCents(payment.tipAmount || 0);
+      const amountCents = addCents(
+        exactMoneyCents(payment.amountPaid),
+        tipCents,
+        "Bahşiş dahil tahsilat"
+      );
       if (payment.paymentMethod === "CASH") {
         cashPaymentsCents = addCents(cashPaymentsCents, amountCents, "Nakit tahsilat toplamı");
       } else if (payment.paymentMethod === "CREDIT_CARD") {
@@ -141,6 +146,7 @@ export function calculateCashShiftClose({
         orderId: payment.orderId,
         paymentMethod: payment.paymentMethod,
         amountPaid: centsToMoney(amountCents),
+        ...(tipCents ? { tipAmount: centsToMoney(tipCents) } : {}),
         createdAt: createdAt.toISOString(),
       };
     })

@@ -48,6 +48,9 @@ export default function PosPage() {
   const [discountPercent, setDiscountPercent] = useState(0);
   const [discountReason, setDiscountReason] = useState("POS yüzde indirimi");
   const [partialAmount, setPartialAmount] = useState("");
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [tipAmount, setTipAmount] = useState("");
+  const tipEditedRef = useRef(false);
   const paymentAttemptRef = useRef(null);
   const [currentShift, setCurrentShift] = useState(null);
   const [shiftPanelOpen, setShiftPanelOpen] = useState(false);
@@ -74,6 +77,18 @@ export default function PosPage() {
   const [paymentError, setPaymentError] = useState("");
   const fetchRequestRef = useRef(0);
   const shiftRequestRef = useRef(0);
+  const receivePaymentAccount = useCallback(
+    (next) => {
+      setPaymentAccount(next);
+      if (
+        !tipEditedRef.current &&
+        next.tableId === selectedTable?.id &&
+        next.summary?.remainingTipAmount !== undefined
+      )
+        setTipAmount(String(next.summary.remainingTipAmount));
+    },
+    [selectedTable?.id]
+  );
 
   useEffect(() => {
     const tableId = selectedTable?.id;
@@ -305,6 +320,9 @@ export default function PosPage() {
 
   const selectTable = (table) => {
     setSelectedTable(table);
+    setSelectedItems([]);
+    tipEditedRef.current = false;
+    setTipAmount("");
     setDiscountPercent(Number(table.orders?.[0]?.discountPercent || 0));
     setDiscountReason(
       table.orders?.[0]?.discountReason || (lang === "en" ? "POS discount" : "POS yüzde indirimi")
@@ -395,6 +413,9 @@ export default function PosPage() {
       setShowReceipt(true);
       paymentAttemptRef.current = null;
       setPartialAmount("");
+      setSelectedItems([]);
+      setTipAmount("0");
+      tipEditedRef.current = true;
       if (Number(settled.remainingBalance) === 0) {
         setSelectedTable(null);
         setMobilePane("tables");
@@ -442,6 +463,8 @@ export default function PosPage() {
       discountPercent,
       discountReason,
       partialAmount,
+      JSON.stringify(selectedItems),
+      tipAmount,
     ].join("|");
     if (paymentAttemptRef.current?.fingerprint !== attemptFingerprint) {
       paymentAttemptRef.current = {
@@ -455,13 +478,15 @@ export default function PosPage() {
       discountPercent,
       discountReason,
       partialAmount,
+      selectedItems,
+      tipAmount,
       idempotencyKey: paymentAttemptRef.current.key,
     });
     if (!payload) {
       setPaymentError(
         lang === "en"
-          ? "Check the discount, reason and partial payment amount."
-          : "İndirim oranı, nedeni ve kısmi ödeme tutarını kontrol edin."
+          ? "Check the discount, item selection, partial amount and tip."
+          : "İndirim, ürün seçimi, kısmi ödeme ve bahşiş tutarını kontrol edin."
       );
       return;
     }
@@ -813,6 +838,8 @@ export default function PosPage() {
             discountPercent,
             discountReason,
             partialAmount,
+            selectedItems,
+            tipAmount,
             isProcessingPayment,
             currentShift,
             finalTotalAmount,
@@ -831,10 +858,21 @@ export default function PosPage() {
             setDiscountPercent,
             previewReceipt,
             setDiscountReason,
-            setPartialAmount,
+            setPartialAmount: (value) => {
+              setSelectedItems([]);
+              setPartialAmount(value);
+            },
+            setSelectedItems: (value) => {
+              setPartialAmount("");
+              setSelectedItems(value);
+            },
+            setTipAmount: (value) => {
+              tipEditedRef.current = true;
+              setTipAmount(value);
+            },
             handlePayment,
             onReceipt: openStoredReceipt,
-            onAccountChange: setPaymentAccount,
+            onAccountChange: receivePaymentAccount,
             onRetryPendingOrder: retryPendingPosOrder,
             onChooseTable: returnToTables,
           }}

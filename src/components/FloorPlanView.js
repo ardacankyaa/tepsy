@@ -19,13 +19,16 @@ import FloorElement, {
   FLOOR_ELEMENT_DEFAULTS,
   FLOOR_ELEMENT_TYPES,
   getFloorElementLabel,
+  normalizeFloorElementRotation,
 } from "@/components/floorplan/FloorElement";
 import TableNode from "@/components/floorplan/TableNode";
 import TableEditorPanel from "@/components/floorplan/TableEditorPanel";
 import {
   clamp,
   clampFloorPlanPosition as clampTablePosition,
+  clampRotatedFloorPlanPosition,
   getFloorPlanFitZoom,
+  getRotatedFloorElementBounds,
   getTableDisplayDimensions,
   normalizeFloorPlanCanvas as normalizeCanvas,
 } from "@/components/floorplan/geometry.mjs";
@@ -82,6 +85,7 @@ export default function FloorPlanView({
   const [selectedEditTable, setSelectedEditTable] = useState(null);
   const [tableSizeDrafts, setTableSizeDrafts] = useState({});
   const [localElements, setLocalElements] = useState(Array.isArray(elements) ? elements : []);
+  const localElementsRef = useRef(localElements);
   const [selectedElementId, setSelectedElementId] = useState(null);
   const [elementSizeDrafts, setElementSizeDrafts] = useState({});
   const [activeElementDragId, setActiveElementDragId] = useState(null);
@@ -197,7 +201,9 @@ export default function FloorPlanView({
   useEffect(() => {
     // Socket yenilemeleri, kaydedilmemiş dekorasyon düzenini ezmemeli.
     if (!hasChangesRef.current) {
-      setLocalElements(Array.isArray(elements) ? elements : []);
+      const nextElements = Array.isArray(elements) ? elements : [];
+      localElementsRef.current = nextElements;
+      setLocalElements(nextElements);
     }
   }, [elements]);
 
@@ -299,6 +305,7 @@ export default function FloorPlanView({
     setLocalCanvas(nextCanvas);
     setCanvasFields({ width: String(nextCanvas.width), height: String(nextCanvas.height) });
     setLocalTables(result.tables);
+    localElementsRef.current = result.elements;
     setLocalElements(result.elements);
     onElementsChange?.(result.elements);
     if (selectedEditTable) {
@@ -424,12 +431,11 @@ export default function FloorPlanView({
   };
 
   const updateElements = (updater) => {
-    setLocalElements((current) => {
-      const next = typeof updater === "function" ? updater(current) : updater;
-      onElementsChange?.(next);
-      return next;
-    });
+    const next = typeof updater === "function" ? updater(localElementsRef.current) : updater;
+    localElementsRef.current = next;
+    setLocalElements(next);
     markDirty();
+    onElementsChange?.(next);
   };
 
   const updateFloorElementProperty = (elementId, property, value) => {
@@ -441,7 +447,7 @@ export default function FloorPlanView({
       nextValue = clamp(Math.round(numericValue || 8), 8, FLOOR_ELEMENT_WIDTH_MAX);
     if (property === "height")
       nextValue = clamp(Math.round(numericValue || 8), 8, FLOOR_ELEMENT_HEIGHT_MAX);
-    if (property === "rotation") nextValue = ((Math.round(numericValue || 0) % 360) + 360) % 360;
+    if (property === "rotation") nextValue = normalizeFloorElementRotation(value);
     updateElements((items) =>
       items.map((item) => (item.id === elementId ? { ...item, [property]: nextValue } : item))
     );
@@ -452,6 +458,12 @@ export default function FloorPlanView({
         )
       );
     }
+  };
+
+  const updateFloorElementAngle = (elementId, value) => {
+    const numericValue = Number(value);
+    const angle = clamp(Math.round(Number.isFinite(numericValue) ? numericValue : 0), 0, 359);
+    updateFloorElementProperty(elementId, "rotation", angle);
   };
 
   const updateFloorElementDraft = (element, property, value) => {
@@ -525,19 +537,27 @@ export default function FloorPlanView({
     }
     if (isEditable && activeElementDragId && containerRef.current) {
       if (activePointerId !== null && e.pointerId !== activePointerId) return;
-      const container = containerRef.current.getBoundingClientRect();
+      const containerNode = containerRef.current;
+      const container = containerNode.getBoundingClientRect();
+      const containerWidth = containerNode.clientWidth;
+      const containerHeight = containerNode.clientHeight;
+      const canvasLeft = container.left + containerNode.clientLeft;
+      const canvasTop = container.top + containerNode.clientTop;
       const activeElement = localElements.find((item) => item.id === activeElementDragId);
-      if (!activeElement) return;
+      if (!activeElement || !containerWidth || !containerHeight) return;
       const { widthPx, heightPx } = getElementDimensions(activeElement);
-      const nextX = clampTablePosition(
-        ((e.clientX - container.left - elementDragOffset.x) / container.width) * 100,
-        container.width,
-        widthPx
+      const rotatedBounds = getRotatedFloorElementBounds(widthPx, heightPx, activeElement.rotation);
+      const nextX = clampRotatedFloorPlanPosition(
+        ((e.clientX - canvasLeft - elementDragOffset.x) / containerWidth) * 100,
+        containerWidth,
+        widthPx,
+        rotatedBounds.widthPx
       );
-      const nextY = clampTablePosition(
-        ((e.clientY - container.top - elementDragOffset.y) / container.height) * 100,
-        container.height,
-        heightPx
+      const nextY = clampRotatedFloorPlanPosition(
+        ((e.clientY - canvasTop - elementDragOffset.y) / containerHeight) * 100,
+        containerHeight,
+        heightPx,
+        rotatedBounds.heightPx
       );
       updateElements((current) =>
         current.map((item) =>
@@ -780,10 +800,16 @@ export default function FloorPlanView({
     if (!isEditable || (event.button !== undefined && event.button !== 0)) return;
     event.preventDefault();
     event.stopPropagation();
-    const bounds = event.currentTarget.getBoundingClientRect();
+    const containerNode = containerRef.current;
+    const containerBounds = containerNode.getBoundingClientRect();
+    const canvasLeft = containerBounds.left + containerNode.clientLeft;
+    const canvasTop = containerBounds.top + containerNode.clientTop;
     setSelectedEditTable(null);
     setSelectedElementId(element.id);
-    setElementDragOffset({ x: event.clientX - bounds.left, y: event.clientY - bounds.top });
+    setElementDragOffset({
+      x: event.clientX - canvasLeft - event.currentTarget.offsetLeft,
+      y: event.clientY - canvasTop - event.currentTarget.offsetTop,
+    });
     setActiveElementDragId(element.id);
     setActivePointerId(event.pointerId);
     activePointerTargetRef.current = event.currentTarget;
@@ -804,17 +830,20 @@ export default function FloorPlanView({
     const deltaY = event.key === "ArrowUp" ? -step : event.key === "ArrowDown" ? step : 0;
     if (!deltaX && !deltaY) return;
     event.preventDefault();
-    const container = containerRef.current.getBoundingClientRect();
+    const containerNode = containerRef.current;
     const { widthPx, heightPx } = getElementDimensions(element);
-    const nextX = clampTablePosition(
+    const rotatedBounds = getRotatedFloorElementBounds(widthPx, heightPx, element.rotation);
+    const nextX = clampRotatedFloorPlanPosition(
       (Number(element.posX) || 0) + deltaX,
-      container.width,
-      widthPx
+      containerNode.clientWidth,
+      widthPx,
+      rotatedBounds.widthPx
     );
-    const nextY = clampTablePosition(
+    const nextY = clampRotatedFloorPlanPosition(
       (Number(element.posY) || 0) + deltaY,
-      container.height,
-      heightPx
+      containerNode.clientHeight,
+      heightPx,
+      rotatedBounds.heightPx
     );
     updateElements((current) =>
       current.map((item) => (item.id === element.id ? { ...item, posX: nextX, posY: nextY } : item))
@@ -1063,7 +1092,9 @@ export default function FloorPlanView({
                   hasChangesRef.current = false;
                   dirtyFieldsRef.current.clear();
                   setLocalTables(Array.isArray(tables) ? tables : []);
-                  setLocalElements(Array.isArray(elements) ? elements : []);
+                  const resetElements = Array.isArray(elements) ? elements : [];
+                  localElementsRef.current = resetElements;
+                  setLocalElements(resetElements);
                   const resetCanvas = normalizeCanvas(canvas);
                   setLocalCanvas(resetCanvas);
                   setCanvasFields({
@@ -1431,6 +1462,26 @@ export default function FloorPlanView({
                     className="min-h-10 w-20 rounded-md border border-[var(--border)] bg-[var(--surface-inset)] px-2 text-xs font-semibold tabular-nums text-[var(--text-primary)]"
                   />
                 </label>
+                <label className="floorplan-size-field font-semibold text-[var(--text-muted)]">
+                  {lang === "tr" ? "Açı" : "Angle"}
+                  <input
+                    type="number"
+                    min={0}
+                    max={359}
+                    step={1}
+                    value={normalizeFloorElementRotation(element.rotation)}
+                    onChange={(event) => updateFloorElementAngle(element.id, event.target.value)}
+                    onKeyDown={(event) => event.key === "Enter" && event.currentTarget.blur()}
+                    aria-label={lang === "tr" ? "Öğe açısı" : "Element angle"}
+                    className="min-h-10 w-20 rounded-md border border-[var(--border)] bg-[var(--surface-inset)] px-2 text-xs font-semibold tabular-nums text-[var(--text-primary)]"
+                  />
+                </label>
+                <output
+                  aria-label={lang === "tr" ? "Mevcut öğe açısı" : "Current element angle"}
+                  className="rounded-md bg-[var(--surface)] px-2 py-2 font-semibold tabular-nums text-[var(--text-primary)]"
+                >
+                  {normalizeFloorElementRotation(element.rotation)}°
+                </output>
                 <div
                   className="flex items-center gap-1"
                   role="group"
