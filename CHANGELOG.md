@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Report currency controls stay available across date changes, pending requests and load failures, including unknown historical currency.
+- Full backup settings distinguish loading, access denial and status errors, with safe retries that preserve completed operations and unsaved plans.
 - POS additions always create their own pending kitchen ticket with persisted retry keys; legacy unkeyed item additions are refused.
 - Currency is fixed after the first order or drawer activity. Historical report currencies are separated, including unknown legacy amounts.
 - Administrator-only, externally confirmed refunds retain original receipts, enforce remaining refundable amounts and reconcile cash drawers and net collections.

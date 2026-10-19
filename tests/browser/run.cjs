@@ -29,6 +29,8 @@ const checks = [
   "tokenx",
   "realtime-recovery",
   "currency-save",
+  "report-currency",
+  "recovery-status",
 ];
 const requested = process.argv.slice(2);
 const selected = requested.length ? requested : checks;

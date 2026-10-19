@@ -1,28 +1,60 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 export default function RecoveryPanel({ lang }) {
   const tr = lang === "tr";
   const [data, setData] = useState(null),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false);
   const [plan, setPlan] = useState({ enabled: false, intervalHours: 24, copyDirectory: "" });
-  const load = async () => {
-    const response = await fetch("/api/backup/recovery", { cache: "no-store" });
-    if (!response.ok) return;
-    const result = await response.json();
-    if (
-      !result ||
-      typeof result.plan?.enabled !== "boolean" ||
-      !Number.isInteger(result.plan?.intervalHours) ||
-      typeof result.plan?.copyDirectory !== "string"
-    )
-      throw new Error("backup-status-invalid");
-    setData(result);
-    setPlan(result.plan);
-  };
-  useEffect(() => {
-    load().catch(() => {});
+  const [loadState, setLoadState] = useState("loading");
+  const mounted = useRef(false),
+    statusRequest = useRef(null),
+    hasPlan = useRef(false);
+  const load = useCallback(async () => {
+    statusRequest.current?.abort();
+    const controller = new AbortController();
+    statusRequest.current = controller;
+    setLoadState("loading");
+    try {
+      const response = await fetch("/api/backup/recovery", {
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      if (controller.signal.aborted || !mounted.current) return;
+      if (response.status === 401 || response.status === 403) {
+        setLoadState("denied");
+        return;
+      }
+      if (!response.ok) throw new Error("backup-status-unavailable");
+      const result = await response.json();
+      if (
+        !result ||
+        typeof result.plan?.enabled !== "boolean" ||
+        !Number.isInteger(result.plan?.intervalHours) ||
+        result.plan.intervalHours < 1 ||
+        result.plan.intervalHours > 168 ||
+        typeof result.plan?.copyDirectory !== "string"
+      )
+        throw new Error("backup-status-invalid");
+      if (controller.signal.aborted || !mounted.current) return;
+      setData(result);
+      if (!hasPlan.current) {
+        setPlan(result.plan);
+        hasPlan.current = true;
+      }
+      setLoadState("ready");
+    } catch {
+      if (!controller.signal.aborted && mounted.current) setLoadState("error");
+    }
   }, []);
+  useEffect(() => {
+    mounted.current = true;
+    load();
+    return () => {
+      mounted.current = false;
+      statusRequest.current?.abort();
+    };
+  }, [load]);
   const perform = async (action, body) => {
     setBusy(true);
     setMessage("");
@@ -33,8 +65,11 @@ export default function RecoveryPanel({ lang }) {
         body: action === "verify" ? body : JSON.stringify(body || {}),
       });
       if (!response.ok) throw new Error((await response.json()).error);
+      if (!mounted.current) return;
       if (action === "create") {
-        const url = URL.createObjectURL(await response.blob());
+        const archive = await response.blob();
+        if (!mounted.current) return;
+        const url = URL.createObjectURL(archive);
         const link = document.createElement("a");
         link.href = url;
         link.download =
@@ -47,6 +82,7 @@ export default function RecoveryPanel({ lang }) {
         setMessage(tr ? "Doğrulanmış tam yedek indirildi." : "Verified full backup downloaded.");
       } else {
         const result = await response.json();
+        if (!mounted.current) return;
         setMessage(
           action === "verify"
             ? tr
@@ -57,11 +93,13 @@ export default function RecoveryPanel({ lang }) {
               : "Backup plan saved."
         );
       }
+      // A completed mutation stays successful even when the status refresh fails.
       await load();
     } catch (error) {
-      setMessage(error.message || (tr ? "İşlem tamamlanamadı." : "Operation failed."));
+      if (mounted.current)
+        setMessage(error.message || (tr ? "İşlem tamamlanamadı." : "Operation failed."));
     } finally {
-      setBusy(false);
+      if (mounted.current) setBusy(false);
     }
   };
   return (
@@ -77,13 +115,36 @@ export default function RecoveryPanel({ lang }) {
           ? "Veritabanını, fişleri, iadeleri, işlem geçmişini, fotoğrafları ve cihaz ayarlarını doğrulanmış ZIP dosyasında saklar. Yönetim sunucu bilgisayarında işletme sahibine açıktır. Dosyayı özel tutun."
           : "Verified ZIP includes database, receipts, refunds, activity history, images and device settings. Managed by the owner on the server computer. Keep this file private."}
       </p>
-      {!data ? (
+      {loadState === "loading" && (
+        <p role="status" className="text-xs text-[var(--text-secondary)]">
+          {tr ? "Yedek durumu yükleniyor…" : "Loading backup status…"}
+        </p>
+      )}
+      {loadState === "error" && (
+        <div className="grid min-w-0 gap-2">
+          <p role="alert" className="text-xs break-words text-[var(--danger)]">
+            {tr
+              ? "Yedek durumu alınamadı. Bağlantıyı kontrol edip yeniden deneyin."
+              : "Backup status could not be loaded. Check the connection and try again."}
+          </p>
+          <button
+            type="button"
+            className="secondary-action min-h-11 px-3 text-xs"
+            disabled={busy}
+            onClick={() => load()}
+          >
+            {tr ? "Yeniden dene" : "Try again"}
+          </button>
+        </div>
+      )}
+      {loadState === "denied" && (
         <p className="text-xs">
           {tr
             ? "Yedek yönetimi için sunucu bilgisayarında işletme sahibi olarak giriş yapın."
             : "Sign in as the owner on the server computer to manage full backups."}
         </p>
-      ) : (
+      )}
+      {data && loadState !== "denied" && (
         <>
           <dl className="grid min-w-0 gap-1 text-xs break-words">
             <div>

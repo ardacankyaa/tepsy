@@ -4,10 +4,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ScrollPanel, PageControls, usePages } from "@/components/ui/Workspace";
 import { useApp } from "@/lib/AppContext";
+import { reportCurrencyOptions } from "@/lib/report-currency.mjs";
 import { ArrowLeft, Printer, ShoppingBag, PieChart } from "lucide-react";
 
 export default function AdminReportsPage() {
-  const { t, lang, restaurantName } = useApp();
+  const { t, lang, restaurantName, currency } = useApp();
   const [reportCurrency, setReportCurrency] = useState("");
   const formatPrice = (amount) => {
     const number = Number(amount || 0).toLocaleString(lang === "tr" ? "tr-TR" : "en-US", {
@@ -24,6 +25,16 @@ export default function AdminReportsPage() {
   const [loadError, setLoadError] = useState("");
   const [reportGeneratedAt, setReportGeneratedAt] = useState("");
   const requestVersion = useRef(0);
+  const selectedCurrency =
+    reportCurrency ||
+    (reportData && Object.hasOwn(reportData, "currency")
+      ? reportData.currency || "unknown"
+      : currency);
+  const currencyOptions = reportCurrencyOptions({
+    currentCurrency: currency,
+    selected: selectedCurrency,
+    availableCurrencies: reportData?.availableCurrencies,
+  });
 
   const fetchReport = useCallback(
     async (p = period) => {
@@ -128,17 +139,21 @@ export default function AdminReportsPage() {
             ))}
           </div>
 
-          {reportData?.availableCurrencies?.length > 1 && (
-            <label className="flex items-center gap-2 text-xs">
+          {currencyOptions.length > 1 && (
+            <label className="flex max-w-full items-center gap-2 text-xs">
               {lang === "tr" ? "Para birimi" : "Currency"}
               <select
-                value={reportCurrency || reportData.currency || "unknown"}
+                className="min-w-0 max-w-full"
+                value={selectedCurrency}
                 onChange={(e) => setReportCurrency(e.target.value)}
               >
-                {reportData.availableCurrencies.map((unit) => (
-                  <option key={unit || "unknown"} value={unit || "unknown"}>
-                    {unit ||
-                      (lang === "tr" ? "Bilinmeyen geçmiş birim" : "Unknown historical currency")}
+                {currencyOptions.map((unit) => (
+                  <option key={unit} value={unit}>
+                    {unit === "unknown"
+                      ? lang === "tr"
+                        ? "Bilinmeyen geçmiş birim"
+                        : "Unknown historical currency"
+                      : unit}
                   </option>
                 ))}
               </select>

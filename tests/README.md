@@ -143,6 +143,15 @@ order and shift records while adding refund/audit tables and closing snapshots.
 
 `currency-save` checks rejected/offline/malformed saves keep the actual currency, pending saves lock controls, confirmed saves persist after reload, and a 320px phone can display the error without horizontal overflow.
 
+`report-currency` keeps historical and current currencies selectable across date
+changes, loading and failed reports. It checks EUR/unknown separation and returning
+to current-currency collections in Turkish and English at 320px.
+
+`recovery-status` distinguishes loading, access denial and unavailable backup
+status. It checks safe GET-only retries after offline/malformed/failed responses,
+preserved plan drafts, successful operations despite failed status refreshes, and
+Turkish/English phone layouts.
+
 The managed install also exercises two concurrent cold/warm launchers, legacy runtime metadata recovery, IPv6-only readiness and refusal to reuse another installation's occupied port. Fresh database schema/seed publication is staged; interrupted work does not replace an existing database. Unit tests cover lifecycle lock ownership and error-preserving cleanup.
 
 It also simulates an older installed release while the server is running. Starting

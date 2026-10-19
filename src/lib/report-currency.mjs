@@ -1,3 +1,13 @@
+export function reportCurrencyOptions({ currentCurrency, selected, availableCurrencies = [] }) {
+  return [
+    ...new Set([
+      currentCurrency,
+      selected,
+      ...availableCurrencies.map((unit) => unit || "unknown"),
+    ]),
+  ];
+}
+
 export function selectReportCurrency({
   payments,
   orders,
