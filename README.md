@@ -77,4 +77,12 @@ npm run db:push && npm run dev
 
 [Architecture](docs/ARCHITECTURE.md) · [Operations](docs/OPERATIONS.md) · [Tests](tests/README.md)
 
-Licensed under [MIT](LICENSE).
+## License
+
+Copyright (c) 2026 Arda Çankaya and TEPSY contributors. Licensed under [MIT](LICENSE).
+
+When redistributing copies or substantial portions of the software, preserve the
+copyright notice and MIT permission notice in [LICENSE](LICENSE). An author's name
+or repository link alone does not replace these notices. Commercial use is
+permitted under the MIT license. Third-party components retain their own licenses
+and copyright notices.
