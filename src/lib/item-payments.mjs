@@ -1,7 +1,39 @@
-import { moneyToCents, centsToMoney, computeOrderBalance } from "./finance.mjs";
+import {
+  moneyToCents,
+  centsToMoney,
+  computeOrderBalance,
+  allocateDiscountAcrossOrders,
+} from "./finance.mjs";
 import { PaymentRequestError } from "./payment-errors.mjs";
 
 const PAYABLE_ORDER_STATUSES = new Set(["PENDING", "PREPARING", "READY", "DELIVERED"]);
+
+// Client preview only. Checkout always recalculates from server snapshots.
+export function previewItemPaymentAmount(orders, selections, discountPercent = 0) {
+  if (!selections.length) return null;
+  try {
+    const gross = orders.reduce((sum, order) => sum + moneyToCents(order.totalPrice), 0);
+    const discount = Math.round((gross * Number(discountPercent || 0)) / 100);
+    const allocated = allocateDiscountAcrossOrders(orders, discount);
+    const locked = orders.some(
+      (order) => (order.payments || []).length > 0 || Number(order.discountAmount || 0) > 0
+    );
+    const previewOrders = orders.map((order) => ({
+      ...order,
+      discountAmount: locked
+        ? Number(order.discountAmount || 0)
+        : (allocated.find((part) => part.orderId === order.id)?.discountCents || 0) / 100,
+    }));
+    return (
+      planItemPayment(previewOrders, selections).allocations.reduce(
+        (sum, allocation) => sum + allocation.amountCents,
+        0
+      ) / 100
+    );
+  } catch {
+    return null;
+  }
+}
 
 export function itemAvailability(order) {
   const available = !(order.payments || []).some(

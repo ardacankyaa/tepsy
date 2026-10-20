@@ -229,7 +229,8 @@ async function assertControlsFit(scope, label) {
     false,
     "full payment is the default path"
   );
-  await page.locator(".pos-split-disclosure > summary").click();
+  await page.getByRole("button", { name: "Hesabı böl / özel ödeme", exact: true }).click();
+  const paymentOptions = page.getByRole("dialog", { name: "Ödemeyi düzenle", exact: true });
   await page.getByRole("spinbutton", { name: "Kişi sayısı", exact: true }).fill("3");
   await page.getByRole("button", { name: "Eşit böl", exact: true }).click();
   const plan = page.getByTestId("split-payment-plan");
@@ -257,8 +258,13 @@ async function assertControlsFit(scope, label) {
     }
   }
   await page.setViewportSize({ width: 1440, height: 900 });
-  const partial = page.getByRole("textbox", { name: "Kısmi ödeme tutarı", exact: true });
+  const partial = page.getByRole("textbox", {
+    name: "Kısmi ödeme tutarı",
+    exact: true,
+    includeHidden: true,
+  });
   assert.equal(Number(await partial.inputValue()), 33.34);
+  await paymentOptions.getByRole("button", { name: "Tamam", exact: true }).click();
   await page.getByRole("button", { name: "NAKİT", exact: true }).click();
   await page.locator("#printable-receipt").waitFor();
   assert.equal(await page.locator(".receipt-paper-totals .is-paid dd").innerText(), "33,34 ₺");
@@ -270,7 +276,10 @@ async function assertControlsFit(scope, label) {
     "equal split should advance to the next share"
   );
 
+  await page.getByRole("button", { name: "Hesabı böl / özel ödeme", exact: true }).click();
+  await paymentOptions.getByRole("radio", { name: "Özel ödeme", exact: true }).check();
   await partial.fill("20");
+  await paymentOptions.getByRole("button", { name: "Tamam", exact: true }).click();
   await page.getByRole("button", { name: "KREDİ KARTI", exact: true }).click();
   const manual = page.getByRole("dialog", { name: "Manuel kart kaydını onayla", exact: true });
   await manual.waitFor();
@@ -416,7 +425,7 @@ async function assertControlsFit(scope, label) {
     .getByRole("button", { name: new RegExp(table.tableNumber) })
     .first()
     .click();
-  await page.locator(".pos-split-disclosure > summary").click();
+  await page.getByRole("button", { name: "Split / custom payment", exact: true }).click();
   await page.getByRole("spinbutton", { name: "Number of people", exact: true }).fill("3");
   await page.getByRole("button", { name: "Split equally", exact: true }).click();
   for (const width of [320, 390, 1440]) {

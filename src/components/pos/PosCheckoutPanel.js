@@ -12,8 +12,8 @@ import {
   X,
 } from "lucide-react";
 import { ScrollPanel } from "@/components/ui/Workspace";
-import PosItemPayments from "./PosItemPayments";
-import PosSplitPayments from "./PosSplitPayments";
+import PosPaymentOptions from "./PosPaymentOptions";
+import TipDisclosure from "@/components/ui/TipDisclosure";
 import PosPaymentHistory from "./PosPaymentHistory";
 
 export default function PosCheckoutPanel({ checkout, actions, formatPrice, t }) {
@@ -381,71 +381,33 @@ export default function PosCheckoutPanel({ checkout, actions, formatPrice, t }) 
                     : "Discount is fixed after the first payment."}
                 </p>
               )}
-              <PosItemPayments
+              <PosPaymentOptions
+                tableId={selectedTable.id}
                 orders={activeOrders}
-                selection={selectedItems}
-                onChange={setSelectedItems}
+                remaining={finalTotalAmount}
+                partialAmount={partialAmount}
+                selectedItems={selectedItems}
+                tipAmount={tipAmount}
+                discountPercent={discountPercent}
+                latestPayment={latestPayment}
                 busy={isProcessingPayment}
                 lang={lang}
                 formatPrice={formatPrice}
-                discountPercent={discountPercent}
-                tipAmount={tipAmount}
+                onAmountChange={setPartialAmount}
+                onItemsChange={setSelectedItems}
               />
-              <label className="pos-partial-field">
-                <span>{lang === "tr" ? "Bahşiş (isteğe bağlı)" : "Tip (optional)"}</span>
-                <small>
-                  {lang === "tr"
+              <TipDisclosure
+                value={tipAmount}
+                onChange={setTipAmount}
+                disabled={isProcessingPayment}
+                lang={lang}
+                formatPrice={formatPrice}
+                hint={
+                  lang === "tr"
                     ? "QR isteğindeki bahşiş burada düzenlenebilir. Hesap bedeline ek tahsil edilir."
-                    : "Confirm or edit the QR tip. Collected in addition to the bill payment."}
-                </small>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={tipAmount}
-                  onChange={(e) => setTipAmount(e.target.value)}
-                  disabled={isProcessingPayment}
-                  placeholder="0.00"
-                />
-              </label>
-              <details className="pos-options pos-split-disclosure" open={Boolean(partialAmount)}>
-                <summary>
-                  {lang === "tr" ? "Hesabı böl / özel tutar" : "Split or custom amount"}
-                </summary>
-                <PosSplitPayments
-                  key={selectedTable.id}
-                  tableId={selectedTable.id}
-                  remaining={finalTotalAmount}
-                  amount={partialAmount}
-                  onAmountChange={setPartialAmount}
-                  latestPayment={latestPayment}
-                  busy={isProcessingPayment}
-                  lang={lang}
-                  formatPrice={formatPrice}
-                />
-              </details>
-              {partialAmount && (
-                <div className="pos-collection-amount" role="status">
-                  <span>{lang === "tr" ? "Bu tahsilat" : "This payment"}</span>
-                  <strong>
-                    {Number.isFinite(Number(partialAmount.replace(",", ".")))
-                      ? formatPrice(Number(partialAmount.replace(",", ".")))
-                      : "—"}
-                  </strong>
-                </div>
-              )}
-              {!selectedItems?.length && Number(String(tipAmount || 0).replace(",", ".")) > 0 && (
-                <div className="pos-collection-amount" role="status">
-                  <span>
-                    {lang === "tr" ? "Bahşiş dahil bu tahsilat" : "This collection including tip"}
-                  </span>
-                  <strong>
-                    {formatPrice(
-                      (partialAmount ? Number(partialAmount.replace(",", ".")) : finalTotalAmount) +
-                        Number(String(tipAmount).replace(",", "."))
-                    )}
-                  </strong>
-                </div>
-              )}
+                    : "Confirm or edit the QR tip. Collected in addition to the bill payment."
+                }
+              />
               <p className="pos-method-hint">
                 {lang === "tr"
                   ? "Tahsil etmek için ödeme yöntemini seçin."

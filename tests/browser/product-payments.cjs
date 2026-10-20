@@ -151,10 +151,38 @@ const assert = require("node:assert/strict");
       .click()
       .catch(() => {});
     await page.getByRole("button", { name: /TIP-1/ }).first().click();
-    await page.getByText("Ürün seçerek öde", { exact: true }).click();
+    const tip = page.getByLabel("Bahşiş (isteğe bağlı)", { exact: true });
+    assert.equal(await tip.isVisible(), false, "tip editor starts collapsed");
+    const tipDisclosure = page.locator(".pos-payment-panel .tip-disclosure");
+    assert.match(await tipDisclosure.locator("summary").innerText(), /10,00/);
+    await tipDisclosure.locator("summary").click();
+    assert.equal(Number(await tip.inputValue()), 10);
+    await tipDisclosure.locator("summary").click();
+    const optionsButton = page.getByRole("button", {
+      name: "Hesabı böl / özel ödeme",
+      exact: true,
+    });
+    await optionsButton.click();
+    const options = page.getByRole("dialog", { name: "Ödemeyi düzenle", exact: true });
+    await options.waitFor();
+    for (const name of ["Hesabı eşit böl", "Özel ödeme", "Ürün seçerek öde"])
+      assert.equal(await options.getByRole("radio", { name, exact: true }).isVisible(), true);
+    await options.getByRole("radio", { name: "Özel ödeme", exact: true }).check();
+    await options.getByRole("textbox", { name: "Kısmi ödeme tutarı", exact: true }).fill("20");
+    await options.getByRole("radio", { name: "Ürün seçerek öde", exact: true }).check();
     await page.getByRole("combobox", { name: "Ödenecek adet: Club sandwich" }).selectOption("1");
     await page.getByRole("combobox", { name: "Ödenecek adet: Limonata" }).selectOption("1");
-    await page.screenshot({ path: output + "/selected-items-desktop.png", fullPage: true });
+    await options.getByRole("button", { name: "Tamam", exact: true }).click();
+    await optionsButton.click();
+    assert.equal(
+      await options.getByRole("combobox", { name: "Ödenecek adet: Club sandwich" }).inputValue(),
+      "1"
+    );
+    await page.screenshot({
+      path: output + "/selected-items-desktop.png",
+      fullPage: true,
+      animations: "disabled",
+    });
     await page.setViewportSize({ width: 320, height: 740 });
     await page
       .getByRole("combobox", { name: "Ödenecek adet: Club sandwich" })
@@ -163,14 +191,23 @@ const assert = require("node:assert/strict");
       await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),
       false
     );
-    await page.screenshot({ path: output + "/selected-items-mobile.png", fullPage: true });
+    const doneBounds = await options
+      .getByRole("button", { name: "Tamam", exact: true })
+      .boundingBox();
+    assert.ok(
+      doneBounds.y >= 0 && doneBounds.y + doneBounds.height <= 740,
+      "payment actions stay visible on mobile"
+    );
+    await page.screenshot({
+      path: output + "/selected-items-mobile.png",
+      fullPage: true,
+      animations: "disabled",
+    });
+    await options.getByRole("button", { name: "Tamam", exact: true }).click();
     await page.locator(".pos-method-cash").click();
     await page.getByRole("dialog").waitFor();
     await page.keyboard.press("Escape");
-    assert.equal(
-      await page.getByLabel("Bahşiş (isteğe bağlı)", { exact: false }).inputValue(),
-      "0"
-    );
+    assert.equal(await tip.inputValue(), "0");
     assert.deepEqual(posted.selectedItems, [
       { orderItemId: "sandwich", quantity: 1 },
       { orderItemId: "lemonade", quantity: 1 },

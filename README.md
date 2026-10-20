@@ -43,6 +43,10 @@ Demo credentials: code `DEMO01`, owner password `TepsyDemo123!`, staff PIN `1234
 | Menu       | Product photos, business logo, business currency setup           |
 | Access     | Owner/staff roles, remembered devices, session management        |
 
+In checkout, **Split / custom payment** opens one window for equal shares, custom
+amounts and selected products. Optional tip entry expands on request in both
+checkout and the QR cart; an entered tip stays visible in the collapsed summary.
+
 Each POS addition becomes a new pending kitchen ticket, including additions to a
 delivered account. Currency can be chosen before trading starts and is locked
 after the first order or cash shift. Recorded card payments and refunds document

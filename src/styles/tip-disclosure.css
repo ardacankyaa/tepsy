@@ -1,0 +1,63 @@
+.tip-disclosure {
+  min-width: 0;
+  border-block: 1px solid var(--border);
+  color: var(--text-primary);
+}
+.tip-disclosure > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 10px 0;
+  cursor: pointer;
+  list-style: none;
+  font-size: 13px;
+}
+.tip-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+.tip-disclosure > summary > span::before {
+  content: "+";
+  display: inline-block;
+  width: 20px;
+  color: var(--text-secondary);
+}
+.tip-disclosure[open] > summary > span::before {
+  content: "−";
+}
+.tip-disclosure > summary > strong {
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.tip-disclosure-content {
+  display: grid;
+  gap: 8px;
+  padding-bottom: 14px;
+  font-size: 13px;
+}
+.tip-disclosure-content input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius-control);
+  padding: 10px 12px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 16px;
+}
+.tip-disclosure-content p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.tip-disclosure summary:focus-visible,
+.tip-disclosure input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}

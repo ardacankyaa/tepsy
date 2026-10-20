@@ -5,6 +5,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import MenuPhoto from "@/components/ui/MenuPhoto";
+import TipDisclosure from "@/components/ui/TipDisclosure";
 import {
   Bell,
   Check,
@@ -274,22 +275,18 @@ function PublicCart({
             maxLength={500}
             rows={3}
           />
-          <label className="qr-tip-field">
-            {isTr ? "Bahşiş (isteğe bağlı)" : "Tip (optional)"}
-            <input
-              type="text"
-              inputMode="decimal"
-              value={tipAmount}
-              onChange={(e) => onTipChange(e.target.value)}
-              disabled={Boolean(orderAttempt) || orderBusy || !orderAttemptReady}
-              placeholder="0.00"
-            />
-          </label>
-          <p className="qr-cart-guidance">
-            {isTr
-              ? "Bahşiş kasada onaylanarak tahsil edilir. Şimdi kartınızdan çekim yapılmaz."
-              : "The tip is confirmed and collected at checkout."}
-          </p>
+          <TipDisclosure
+            value={tipAmount}
+            onChange={onTipChange}
+            disabled={Boolean(orderAttempt) || orderBusy || !orderAttemptReady}
+            lang={lang}
+            formatPrice={formatPrice}
+            hint={
+              isTr
+                ? "Bahşiş kasada onaylanarak tahsil edilir. Şimdi kartınızdan çekim yapılmaz."
+                : "The tip is confirmed and collected at checkout."
+            }
+          />
           <div className="service-total-row service-total-emphasis">
             <span>{copy.total}</span>
             <strong>

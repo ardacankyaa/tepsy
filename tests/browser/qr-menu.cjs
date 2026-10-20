@@ -129,7 +129,11 @@ let browser, page;
   );
   assert.ok((await cart.locator(".service-line-price").innerText()).includes("2.500,00"));
   await cart.getByLabel("Sipariş notu (isteğe bağlı)", { exact: false }).fill("Sade olsun");
+  assert.equal(await cart.getByLabel("Bahşiş (isteğe bağlı)", { exact: true }).isVisible(), false);
+  await cart.locator(".tip-disclosure > summary").click();
   await cart.getByLabel("Bahşiş (isteğe bağlı)", { exact: true }).fill("10,50");
+  await cart.locator(".tip-disclosure > summary").click();
+  assert.match(await cart.locator(".tip-disclosure > summary").innerText(), /10,50/);
   await cart.getByRole("button", { name: "Siparişi gönder", exact: true }).click();
   await cart.getByRole("button", { name: "Aynı siparişi yeniden dene", exact: true }).waitFor();
   assert.equal(

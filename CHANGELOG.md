@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Equal shares, custom amounts and selected products share one checkout window. Optional tip editors start collapsed in checkout and QR carts, retaining entered amounts in their summaries.
 - Checkout supports selecting specific order items and quantities, with server-calculated discounts, paid quantities, immutable item receipts and replay protection.
 - Voluntary QR tip requests are confirmed at POS; collected tips remain separate from bill balances and are included in receipts, drawer reconciliation and reports.
 - Floor elements have an exact angle control and stable independent rotation while editing and saving.

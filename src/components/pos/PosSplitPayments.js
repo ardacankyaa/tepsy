@@ -13,6 +13,7 @@ export default function PosSplitPayments({
   busy,
   lang,
   formatPrice,
+  mode = "split",
 }) {
   const [people, setPeople] = useState("2");
   const [plan, setPlan] = useState(null);
@@ -61,30 +62,42 @@ export default function PosSplitPayments({
     <section className="pos-split-payments" aria-labelledby="pos-split-title">
       <h4 id="pos-split-title">
         <Users size={17} aria-hidden="true" />
-        {tr ? "Ödeme kolaylığı" : "Split payment"}
+        {mode === "custom"
+          ? tr
+            ? "Özel ödeme"
+            : "Custom payment"
+          : tr
+            ? "Hesabı eşit böl"
+            : "Split equally"}
       </h4>
       <p>
-        {tr
-          ? "Kalan hesabı eşit bölün veya bu tahsilat için özel tutar girin."
-          : "Split the remaining balance equally or enter a custom amount for this payment."}
+        {mode === "custom"
+          ? tr
+            ? "Bu tahsilat için ödenecek tutarı girin."
+            : "Enter the amount to collect in this payment."
+          : tr
+            ? "Kalan hesabı eşit bölün veya bu tahsilat için özel tutar girin."
+            : "Split the remaining balance equally or enter a custom amount for this payment."}
       </p>
-      <div className="pos-split-tools">
-        <label>
-          {tr ? "Kişi sayısı" : "Number of people"}
-          <input
-            type="number"
-            min="2"
-            max="50"
-            step="1"
-            value={people}
-            disabled={busy}
-            onChange={(event) => setPeople(event.target.value)}
-          />
-        </label>
-        <button type="button" disabled={busy || !remainingCents} onClick={divide}>
-          {tr ? "Eşit böl" : "Split equally"}
-        </button>
-      </div>
+      {mode !== "custom" && (
+        <div className="pos-split-tools">
+          <label>
+            {tr ? "Kişi sayısı" : "Number of people"}
+            <input
+              type="number"
+              min="2"
+              max="50"
+              step="1"
+              value={people}
+              disabled={busy}
+              onChange={(event) => setPeople(event.target.value)}
+            />
+          </label>
+          <button type="button" disabled={busy || !remainingCents} onClick={divide}>
+            {tr ? "Eşit böl" : "Split equally"}
+          </button>
+        </div>
+      )}
       {plan && (
         <div
           className="pos-split-plan"

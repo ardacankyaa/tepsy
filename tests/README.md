@@ -43,8 +43,9 @@ npm run test:accounts
 ## Browser groups
 
 `product-payments` verifies floor angle entry/save/reload, selected product quantities,
-QR tip prefill and the checkout payload at desktop and 320 px. `qr-menu` verifies
-tip intent survives an ambiguous order retry. Integration exercises real selected
+the shared equal/custom/item payment dialog, collapsed tip entry, QR tip prefill
+and the checkout payload at desktop and 320 px. `qr-menu` verifies collapsed tip
+entry retains its amount and tip intent survives an ambiguous order retry. Integration exercises real selected
 item payment, replay/overpayment prevention, immutable receipts and QR tip storage.
 
 For focused fixtures, start a local server (`npm run dev`) and run:

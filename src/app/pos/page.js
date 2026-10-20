@@ -826,6 +826,7 @@ export default function PosPage() {
         />
 
         <PosCheckoutPanel
+          key={selectedTable?.id || "no-table"}
           checkout={{
             table: selectedTable,
             activeOrders,

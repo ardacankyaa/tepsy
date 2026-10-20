@@ -128,7 +128,7 @@ export function ScrollPanel({ children, className = "", label = "", ...props }) 
   );
 }
 
-export function Dialog({ open, onClose, title, children, className = "" }) {
+export function Dialog({ open, onClose, title, children, footer, className = "" }) {
   const ref = useRef(null);
   const titleId = useId();
   const { lang } = useApp();
@@ -189,6 +189,7 @@ export function Dialog({ open, onClose, title, children, className = "" }) {
         </button>
       </header>
       <div className="dialog-content">{children}</div>
+      {footer && <footer className="dialog-footer">{footer}</footer>}
     </dialog>
   );
 }

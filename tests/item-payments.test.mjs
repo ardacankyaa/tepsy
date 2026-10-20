@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { planItemPayment, itemAvailability } from "../src/lib/item-payments.mjs";
+import {
+  planItemPayment,
+  itemAvailability,
+  previewItemPaymentAmount,
+} from "../src/lib/item-payments.mjs";
 import { parsePaymentRequest } from "../src/lib/payment-request.mjs";
 import { calculateCashShiftClose } from "../src/lib/cash-shift.mjs";
 const order = () => ({
@@ -14,6 +18,19 @@ const order = () => ({
     { id: "b", quantity: 1, unitPrice: "50", menuItemName: "Limonata" },
     { id: "c", quantity: 1, unitPrice: "30", menuItemName: "Espresso" },
   ],
+});
+
+test("item preview follows proposed discounts and retains a previously fixed discount", () => {
+  const current = order();
+  const selected = [
+    { orderItemId: "a", quantity: 1 },
+    { orderItemId: "b", quantity: 1 },
+  ];
+  assert.equal(previewItemPaymentAmount([current], selected), 150);
+  assert.equal(previewItemPaymentAmount([current], selected, 10), 135);
+  current.discountAmount = "36";
+  assert.equal(previewItemPaymentAmount([current], selected, 10), 120);
+  assert.equal(previewItemPaymentAmount([current], []), null);
 });
 test("cash drawer includes collected tips once while principal remains separate", () => {
   const close = calculateCashShiftClose({
