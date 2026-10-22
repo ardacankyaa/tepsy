@@ -25,7 +25,7 @@ const next = require("next");
 const { Server } = require("socket.io");
 const os = require("os");
 const crypto = require("crypto");
-const { PrismaClient } = require("@prisma/client");
+const { createPrismaClient } = require("./src/lib/prisma-client.cjs");
 const {
   allowedRolesForPath,
   currentStaffSession,
@@ -70,7 +70,7 @@ try {
 
 // Shared Prisma client for the CommonJS server environment.
 const databaseUrl = "file:" + runtimeConfig.databasePath.replaceAll("\\", "/");
-const prisma = global.prisma || new PrismaClient({ datasources: { db: { url: databaseUrl } } });
+const prisma = global.prisma || createPrismaClient(databaseUrl);
 global.prisma = prisma;
 
 const authConfigCache = global.__tepsyAuthConfigCache ||

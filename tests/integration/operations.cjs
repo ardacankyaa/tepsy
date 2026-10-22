@@ -344,12 +344,10 @@ async function runOperationsChecks({
     { cwd: root, env, encoding: "utf8", windowsHide: true }
   );
   assert.equal(restoredResult.status, 0, restoredResult.stderr);
-  const { PrismaClient } = require("@prisma/client");
-  const db = new PrismaClient({
-    datasources: {
-      db: { url: "file:" + path.join(restored, "prisma/dev.db").replaceAll("\\", "/") },
-    },
-  });
+  const { createPrismaClient } = require("../../src/lib/prisma-client.cjs");
+  const db = createPrismaClient(
+    "file:" + path.join(restored, "prisma/dev.db").replaceAll("\\", "/")
+  );
   try {
     assert.equal(await db.refund.count({ where: { paymentId: first.paymentId } }), 3);
     assert.ok((await db.auditEvent.count()) > 0);
@@ -358,7 +356,7 @@ async function runOperationsChecks({
   } finally {
     await db.$disconnect();
   }
-  const currentDb = new PrismaClient({ datasources: { db: { url: env.TEPSY_DATABASE_URL } } });
+  const currentDb = createPrismaClient(env.TEPSY_DATABASE_URL);
   try {
     const payments = await currentDb.payment.findMany({
       where: { cashShiftId: shift.id, paymentMethod: "CASH" },

@@ -30,6 +30,7 @@ const rootFiles = [
   "jsconfig.json",
   "next.config.mjs",
   "postcss.config.js",
+  "prisma.config.mjs",
 ];
 const extensions = new Set([
   ".js",

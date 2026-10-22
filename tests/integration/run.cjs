@@ -270,7 +270,7 @@ async function main() {
       "migrate",
       "diff",
       "--from-empty",
-      "--to-schema-datamodel",
+      "--to-schema",
       path.join(root, "prisma", "schema.prisma"),
       "--script",
     ],
@@ -278,11 +278,13 @@ async function main() {
   );
   if (migration.error) throw migration.error;
   assert.equal(migration.status, 0, migration.stderr);
-  const applied = spawnSync(
-    process.execPath,
-    [prismaCli, "db", "execute", "--url", dbUrl, "--stdin"],
-    { cwd: root, env, input: migration.stdout, windowsHide: true, encoding: "utf8" }
-  );
+  const applied = spawnSync(process.execPath, [prismaCli, "db", "execute", "--stdin"], {
+    cwd: root,
+    env,
+    input: migration.stdout,
+    windowsHide: true,
+    encoding: "utf8",
+  });
   if (applied.error) throw applied.error;
   assert.equal(applied.status, 0, applied.stderr);
   await startServer();
@@ -292,11 +294,13 @@ async function main() {
     async () => {
       const demoPath = path.join(directory, "demo.db");
       const demoUrl = "file:" + demoPath.replaceAll("\\", "/");
-      const initialized = spawnSync(
-        process.execPath,
-        [prismaCli, "db", "execute", "--url", demoUrl, "--stdin"],
-        { cwd: root, env, input: migration.stdout, encoding: "utf8", windowsHide: true }
-      );
+      const initialized = spawnSync(process.execPath, [prismaCli, "db", "execute", "--stdin"], {
+        cwd: root,
+        env: { ...env, TEPSY_DATABASE_URL: demoUrl, RESTOPOS_DATABASE_URL: demoUrl },
+        input: migration.stdout,
+        encoding: "utf8",
+        windowsHide: true,
+      });
       assert.equal(initialized.status, 0, initialized.stderr);
       const seedEnv = { ...env, TEPSY_SEED_DATABASE_URL: demoUrl };
       const seeded = spawnSync(process.execPath, ["prisma/seed.js"], {
@@ -306,8 +310,8 @@ async function main() {
         windowsHide: true,
       });
       assert.equal(seeded.status, 0, seeded.stderr);
-      const { PrismaClient } = require("@prisma/client");
-      const demo = new PrismaClient({ datasources: { db: { url: demoUrl } } });
+      const { createPrismaClient } = require("../../src/lib/prisma-client.cjs");
+      const demo = createPrismaClient(demoUrl);
       try {
         const beforeSeed = {
           tables: await demo.table.count(),
@@ -3191,10 +3195,8 @@ async function main() {
     assert.match(reset.backupFile, /^tepsy-reset-\d{8}-\d{6}-\d+\.db$/);
     const backupPath = path.join(directory, "backups", reset.backupFile);
     assert.ok(fs.statSync(backupPath).size > 0);
-    const { PrismaClient } = require("@prisma/client");
-    const backup = new PrismaClient({
-      datasources: { db: { url: `file:${backupPath.replaceAll("\\", "/")}` } },
-    });
+    const { createPrismaClient } = require("../../src/lib/prisma-client.cjs");
+    const backup = createPrismaClient(`file:${backupPath.replaceAll("\\", "/")}`);
     try {
       assert.ok((await backup.order.count()) > 0);
       assert.ok((await backup.payment.count()) > 0);

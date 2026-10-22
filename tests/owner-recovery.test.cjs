@@ -291,7 +291,16 @@ test("recovery CLI uses only the selected installation's Prisma dependency", (t)
   fs.mkdirSync(moduleDirectory, { recursive: true });
   fs.writeFileSync(
     path.join(moduleDirectory, "index.js"),
-    "module.exports = { PrismaClient: class InstallationClient {} };"
+    "module.exports = { PrismaClient: class InstallationClient { constructor(options) { this.options = options; } } };"
   );
-  assert.equal(recoveryPrismaClient(root).name, "InstallationClient");
+  const legacy = recoveryPrismaClient(root)("file:legacy.db");
+  assert.equal(legacy.constructor.name, "InstallationClient");
+  assert.deepEqual(legacy.options, { datasources: { db: { url: "file:legacy.db" } } });
+  const factory = path.join(root, "src", "lib", "prisma-client.cjs");
+  fs.mkdirSync(path.dirname(factory), { recursive: true });
+  fs.writeFileSync(
+    factory,
+    "module.exports = { createPrismaClient: function installationFactory() {} };"
+  );
+  assert.equal(recoveryPrismaClient(root).name, "installationFactory");
 });

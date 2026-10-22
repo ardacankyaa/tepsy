@@ -1,12 +1,12 @@
-import { PrismaClient } from "@prisma/client";
+import { createPrismaClient } from "./prisma-client.cjs";
+import { resolveRuntimeConfig } from "../../scripts/runtime-config.cjs";
 
 const globalForPrisma = global;
 
-function createPrismaClient() {
-  const databaseUrl = process.env.TEPSY_DATABASE_URL || process.env.RESTOPOS_DATABASE_URL;
-  const client = new PrismaClient({
+function createClient() {
+  const { databasePath } = resolveRuntimeConfig(process.env);
+  const client = createPrismaClient("file:" + databasePath.replaceAll("\\", "/"), {
     log: ["error"],
-    ...(databaseUrl ? { datasources: { db: { url: databaseUrl } } } : {}),
   });
 
   // Optimize SQLite for high-throughput concurrency
@@ -18,7 +18,7 @@ function createPrismaClient() {
   return client;
 }
 
-export const prisma = globalForPrisma.prisma || createPrismaClient();
+export const prisma = globalForPrisma.prisma || createClient();
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 export default prisma;

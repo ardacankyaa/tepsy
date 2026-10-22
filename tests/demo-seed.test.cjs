@@ -20,8 +20,8 @@ test("demo seed rejects missing explicit test database before constructing a dat
     () =>
       vm.runInNewContext(source, {
         require: (name) =>
-          name === "@prisma/client"
-            ? { PrismaClient: fake }
+          name === "../src/lib/prisma-client.cjs"
+            ? { createPrismaClient: () => new fake() }
             : name.startsWith("node:")
               ? require(name)
               : require(path.resolve("prisma", name)),

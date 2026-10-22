@@ -1,8 +1,8 @@
 const { randomBytes } = require("node:crypto");
-const { PrismaClient } = require("@prisma/client");
+const { createPrismaClient } = require("../src/lib/prisma-client.cjs");
 const { resolveSeedDatabaseUrl } = require("../src/lib/demo-seed-policy.cjs");
 const databaseUrl = resolveSeedDatabaseUrl();
-const prisma = new PrismaClient({ datasources: { db: { url: databaseUrl } } });
+const prisma = createPrismaClient(databaseUrl);
 
 async function main() {
   const { hashCredential } = await import("../src/lib/auth-local.js");

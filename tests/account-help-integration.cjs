@@ -8,7 +8,7 @@ const { spawn, spawnSync } = require("node:child_process");
 const { parseEnv } = require("node:util");
 const { once } = require("node:events");
 const { releaseFiles, sourceHash } = require("../scripts/release-files.cjs");
-const { PrismaClient } = require("@prisma/client");
+const { createPrismaClient } = require("../src/lib/prisma-client.cjs");
 
 const root = path.resolve(__dirname, "..");
 const result = { startedAt: new Date().toISOString(), passed: false, checks: [] };
@@ -343,17 +343,17 @@ async function main() {
       "migrate",
       "diff",
       "--from-empty",
-      "--to-schema-datamodel",
+      "--to-schema",
       path.join(parentApp, "prisma", "schema.prisma"),
       "--script",
     ],
     { env: parentEnv }
   );
-  syncCommand([prismaCli, "db", "execute", "--url", privateEnv.TEPSY_DATABASE_URL, "--stdin"], {
+  syncCommand([prismaCli, "db", "execute", "--stdin"], {
     env: parentEnv,
     input: sql,
   });
-  parentDb = new PrismaClient({ datasources: { db: { url: privateEnv.TEPSY_DATABASE_URL } } });
+  parentDb = createPrismaClient(privateEnv.TEPSY_DATABASE_URL);
   const serverLog = fs.openSync(path.join(directory, "parent-server.log"), "a");
   parentServer = spawn(process.execPath, [path.join(parentApp, "server.js"), "--production"], {
     cwd: parentApp,
@@ -527,7 +527,7 @@ async function main() {
         path.resolve(childEnv.TEPSY_MENU_IMAGE_DIR),
         path.join(profileApp, ".tepsy", "menu-images")
       );
-      childDb = new PrismaClient({ datasources: { db: { url: childEnv.TEPSY_DATABASE_URL } } });
+      childDb = createPrismaClient(childEnv.TEPSY_DATABASE_URL);
       const empty = await snapshot(childDb);
       for (const count of Object.values(empty.counts)) assert.equal(count, 0);
       status(
@@ -571,7 +571,7 @@ async function main() {
       assert.equal((await ready(profileBase)).restaurantCode, "QA_INDEPENDENT");
       status(await api(profileBase, "/api/tables", { cookie: childCookie }), 200);
       const childEnv = parseEnv(fs.readFileSync(path.join(profileApp, ".env"), "utf8"));
-      childDb = new PrismaClient({ datasources: { db: { url: childEnv.TEPSY_DATABASE_URL } } });
+      childDb = createPrismaClient(childEnv.TEPSY_DATABASE_URL);
       assert.deepEqual(await snapshot(childDb), before);
       status(await api(parentBase, "/api/tables", { cookie: parentCookie }), 200);
       assert.deepEqual(await snapshot(parentDb), parentSnapshot);

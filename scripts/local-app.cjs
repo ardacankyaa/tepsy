@@ -225,22 +225,19 @@ async function setup(app, mode, env) {
           "migrate",
           "diff",
           "--from-empty",
-          "--to-schema-datamodel",
+          "--to-schema",
           "prisma/schema.prisma",
           "--script",
         ],
         { ...options, capture: true }
       );
       await new Promise((resolve, reject) => {
-        const child = spawn(
-          process.execPath,
-          [prisma, "db", "execute", "--url", stageUrl, "--stdin"],
-          {
-            ...options,
-            windowsHide: true,
-            stdio: ["pipe", "inherit", "inherit"],
-          }
-        );
+        const child = spawn(process.execPath, [prisma, "db", "execute", "--stdin"], {
+          ...options,
+          env: { ...env, TEPSY_DATABASE_URL: stageUrl, RESTOPOS_DATABASE_URL: stageUrl },
+          windowsHide: true,
+          stdio: ["pipe", "inherit", "inherit"],
+        });
         const untrack = trackInstallerChild(child.pid);
         child.once("close", untrack);
         child.once("error", reject);

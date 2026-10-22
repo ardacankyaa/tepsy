@@ -32,7 +32,8 @@
     "test:accounts": "node tests/account-help-integration.cjs"
   },
   "dependencies": {
-    "@prisma/client": "^5.19.1",
+    "@prisma/adapter-better-sqlite3": "^7.10.1",
+    "@prisma/client": "^7.10.1",
     "lucide-react": "^0.441.0",
     "next": "16.4.2",
     "qrcode": "^1.5.4",
@@ -53,7 +54,7 @@
     "playwright": "1.62.1",
     "postcss": "8.5.28",
     "prettier": "3.9.10",
-    "prisma": "^5.19.1",
+    "prisma": "^7.10.1",
     "tailwindcss": "4.3.3"
   },
   "overrides": {

@@ -28,9 +28,16 @@ function recoveryRuntime(root, env = process.env) {
 }
 function recoveryPrismaClient(root) {
   try {
+    const factory = path.join(root, "src", "lib", "prisma-client.cjs");
+    if (fs.existsSync(factory)) {
+      const { createPrismaClient } = require(factory);
+      if (typeof createPrismaClient !== "function") throw new Error("Invalid Prisma client");
+      return createPrismaClient;
+    }
+    // Installations from before Prisma 7 still construct their own client directly.
     const { PrismaClient } = require(path.join(root, "node_modules", "@prisma", "client"));
     if (typeof PrismaClient !== "function") throw new Error("Invalid Prisma client");
-    return PrismaClient;
+    return (url) => new PrismaClient({ datasources: { db: { url } } });
   } catch (cause) {
     throw new Error(
       "The selected installation's dependencies are missing or unavailable. Run START.bat for that installation first, then retry owner recovery.",
@@ -45,10 +52,8 @@ async function main(args = process.argv.slice(2)) {
     throw new Error(
       "Installation database does not exist. Run this command from the existing installation or pass --installation."
     );
-  const PrismaClient = recoveryPrismaClient(root);
-  const prisma = new PrismaClient({
-    datasources: { db: { url: "file:" + runtime.databasePath.replaceAll("\\", "/") } },
-  });
+  const createPrismaClient = recoveryPrismaClient(root);
+  const prisma = createPrismaClient("file:" + runtime.databasePath.replaceAll("\\", "/"));
   try {
     const config = await prisma.restaurantConfig.findFirst({
       select: { accessPasswordHash: true },
