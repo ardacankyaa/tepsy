@@ -8,6 +8,7 @@ import { useApp } from "@/lib/AppContext";
 import {
   clearOrderAttempt,
   isDefinitiveOrderRejection,
+  orderRejectionMessage,
   restoreOrderAttempt,
   restoreOrCreateOrderAttempt,
 } from "@/lib/order-idempotency.mjs";
@@ -549,12 +550,17 @@ export default function TableOrderPage() {
       });
       if (!response.ok) {
         const result = await response.json().catch(() => ({}));
-        if (isDefinitiveOrderRejection(response.status)) {
+        // An archived table is checked after replay lookup, so no order exists for this key.
+        if (isDefinitiveOrderRejection(response.status) || result.code === "archived-table") {
           clearOrderAttempt(orderAttemptStorageKey);
           orderAttemptRef.current = null;
           setOrderAttempt(null);
         }
-        throw new Error(result.error || `Order request failed with status ${response.status}`);
+        const error = new Error(
+          result.error || `Order request failed with status ${response.status}`
+        );
+        error.code = result.code;
+        throw error;
       }
       clearOrderAttempt(orderAttemptStorageKey);
       orderAttemptRef.current = null;
@@ -567,13 +573,14 @@ export default function TableOrderPage() {
     } catch (error) {
       console.error(error);
       showNotification(
-        orderAttemptRef.current
-          ? isTr
-            ? "Sipariş sonucu doğrulanamadı. Aynı taslağı yeniden gönderin; içeriği kilitli."
-            : "The order result could not be confirmed. Retry the same draft; its contents are locked."
-          : isTr
-            ? "Sipariş gönderilemedi; taslak ve not korundu."
-            : "Order could not be sent; the draft and note are still here.",
+        orderRejectionMessage(error.code, isTr) ||
+          (orderAttemptRef.current
+            ? isTr
+              ? "Sipariş sonucu doğrulanamadı. Aynı taslağı yeniden gönderin; içeriği kilitli."
+              : "The order result could not be confirmed. Retry the same draft; its contents are locked."
+            : isTr
+              ? "Sipariş gönderilemedi; taslak ve not korundu."
+              : "Order could not be sent; the draft and note are still here."),
         "error"
       );
     } finally {

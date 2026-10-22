@@ -91,3 +91,34 @@ export function clearOrderAttempt(storageKey) {
 export function isDefinitiveOrderRejection(status) {
   return status >= 400 && status < 500 && !AMBIGUOUS_CLIENT_STATUSES.has(status);
 }
+
+const ORDER_REJECTION_MESSAGES = {
+  "menu-item-unavailable": [
+    "Sepetteki bir ürün artık satışta değil. Menüyü yenileyip ürünü sepetten çıkarın.",
+    "A cart item is no longer available. Refresh the menu and remove it from the cart.",
+  ],
+  "table-not-found": [
+    "Masa bulunamadı. Masa listesine dönüp yeniden seçin.",
+    "The table was not found. Return to the table list and select it again.",
+  ],
+  "archived-table": [
+    "Bu masa arşivlendi ve sipariş alamaz. Başka bir masa seçin.",
+    "This table was archived and cannot receive orders. Select another table.",
+  ],
+  "invalid-items": [
+    "Sepetteki ürünler veya adetler geçersiz. Sepeti kontrol edin.",
+    "The cart items or quantities are invalid. Check the cart.",
+  ],
+  "invalid-quantity": [
+    "Ürün adedi 1 ile 99 arasında olmalıdır.",
+    "Item quantities must be between 1 and 99.",
+  ],
+};
+
+// Explains a server rejection code to staff; unknown codes return null.
+export function orderRejectionMessage(code, isTr) {
+  const messages = Object.hasOwn(ORDER_REJECTION_MESSAGES, code)
+    ? ORDER_REJECTION_MESSAGES[code]
+    : null;
+  return messages ? messages[isTr ? 0 : 1] : null;
+}

@@ -427,7 +427,7 @@ async function startServer() {
 
   stopRecoveryScheduler = require("./src/lib/recovery.cjs").startRecoveryScheduler();
   const localIp = getLocalIpAddress();
-  console.log(`\nTEPSY v1.0.0`);
+  console.log(`\nTEPSY v${require("./package.json").version}`);
   console.log(`  Local:  http://localhost:${port}`);
   if (hostname === "0.0.0.0" || hostname === "::")
     console.log(`  LAN:    http://${localIp}:${port}\n`);

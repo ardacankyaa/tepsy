@@ -83,3 +83,19 @@ test("order attempt creation stops if session storage cannot preserve the retry"
     delete globalThis.window;
   }
 });
+
+test("known order rejections explain the reason in both languages", () => {
+  for (const code of [
+    "menu-item-unavailable",
+    "table-not-found",
+    "archived-table",
+    "invalid-items",
+    "invalid-quantity",
+  ]) {
+    const tr = policy.orderRejectionMessage(code, true);
+    const en = policy.orderRejectionMessage(code, false);
+    assert.ok(tr && en && tr !== en, code);
+  }
+  for (const code of [undefined, "", "idempotency-conflict", "toString", "__proto__"])
+    assert.equal(policy.orderRejectionMessage(code, true), null);
+});

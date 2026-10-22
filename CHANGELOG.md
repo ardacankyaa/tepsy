@@ -2,7 +2,9 @@
 
 ## Unreleased
 
-- Approving a QR request from the order screen now occupies its table, refuses archived tables and clears the pending request for other staff, matching the QR request panel.
+- Staff order screens explain rejected orders (unavailable product, archived or missing table, invalid quantities) instead of a generic failure; an archived table no longer keeps the draft locked.
+- Approving a QR request through the orders API (`PATCH /api/orders/[id]`) now occupies its table, refuses archived tables and clears the pending request for other staff, matching the QR request panel that the app uses.
+- The startup banner reads the version from `package.json`. Unused `clsx` and `tailwind-merge` dependencies were removed.
 - Equal shares, custom amounts and selected products share one checkout window. Optional tip editors start collapsed in checkout and QR carts, retaining entered amounts in their summaries.
 - Checkout supports selecting specific order items and quantities, with server-calculated discounts, paid quantities, immutable item receipts and replay protection.
 - Voluntary QR tip requests are confirmed at POS; collected tips remain separate from bill balances and are included in receipts, drawer reconciliation and reports.
