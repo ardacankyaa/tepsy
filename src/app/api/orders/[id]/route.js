@@ -235,6 +235,22 @@ export async function PATCH(request, { params }) {
             "Sipariş durumu aynı anda değiştirildi; yeniden deneyin."
           );
 
+        // Approving a QR request opens the table account, as in /api/qr-requests.
+        if (order.status === "AWAITING_WAITER_APPROVAL" && order.tableId) {
+          const tableUpdate = await tx.table.updateMany({
+            where: { id: order.tableId, isArchived: false },
+            data: {
+              status: order.table?.status === "BILL_REQUESTED" ? "BILL_REQUESTED" : "OCCUPIED",
+            },
+          });
+          if (tableUpdate.count !== 1)
+            throw new OrderRequestError(
+              409,
+              "table-conflict",
+              "Masa artık sipariş için kullanılamıyor."
+            );
+        }
+
         if (["READY", "PREPARING", "DELIVERED"].includes(action.status)) {
           await tx.orderItem.updateMany({
             where: { orderId: id, status: { not: "CANCELLED" } },
@@ -321,6 +337,10 @@ export async function PATCH(request, { params }) {
         result.action.status === "PENDING"
       ) {
         global.io.emit("order:new", orderEvent);
+        global.io
+          .to("role:ADMIN")
+          .to("role:WAITER")
+          .emit("qr:reviewed", { id: orderEvent.id, status: orderEvent.status });
       }
     }
 
