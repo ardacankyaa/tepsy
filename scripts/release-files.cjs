@@ -30,7 +30,6 @@ const rootFiles = [
   "jsconfig.json",
   "next.config.mjs",
   "postcss.config.js",
-  "tailwind.config.js",
 ];
 const extensions = new Set([
   ".js",

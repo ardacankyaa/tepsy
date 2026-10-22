@@ -27,14 +27,7 @@ export default [
     },
   },
   {
-    files: [
-      "**/*.cjs",
-      "server.js",
-      "scripts/*.js",
-      "prisma/*.js",
-      "tailwind.config.js",
-      "postcss.config.js",
-    ],
+    files: ["**/*.cjs", "server.js", "scripts/*.js", "prisma/*.js", "postcss.config.js"],
     languageOptions: { sourceType: "commonjs" },
   },
   {

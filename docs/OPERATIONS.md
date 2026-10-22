@@ -64,6 +64,10 @@ python3 scripts/initialize-sqlite.py --database prisma/dev.db
 npm run db:push && npm run dev
 ```
 
+`initialize-sqlite.py` refuses existing files, so these commands only create a new,
+empty development database. Upgrade existing restaurant data as described in
+[Database Upgrade](#database-upgrade), never with `db:push`.
+
 ## Account recovery and independent restaurants
 
 The login page provides **Forgot password** / **Şifremi unuttum**. For an owner:
@@ -130,7 +134,7 @@ python3 scripts/migrate-tepsy.py --database prisma/dev.db
 npm run build && npm start
 ```
 
-Never use `db:push --accept-data-loss` on restaurant data.
+Never use `db:push`, and especially not `--accept-data-loss`, on restaurant data.
 
 ## Backup & Recovery
 

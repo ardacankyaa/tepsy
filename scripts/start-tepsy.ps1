@@ -64,7 +64,7 @@ function Get-OwnedServerProcess {
 function Test-BuildFresh {
     if (-not (Test-Path -LiteralPath $buildPath)) { return $false }
     $buildTime = (Get-Item -LiteralPath $buildPath).LastWriteTimeUtc
-    $sources = @('src', 'public', 'server.js', 'package.json', 'next.config.mjs', 'next.config.js', 'prisma/schema.prisma', 'package-lock.json', 'tailwind.config.js', 'postcss.config.js', 'jsconfig.json')
+    $sources = @('src', 'public', 'server.js', 'package.json', 'next.config.mjs', 'next.config.js', 'prisma/schema.prisma', 'package-lock.json', 'postcss.config.js', 'jsconfig.json')
     foreach ($source in $sources) {
         $sourcePath = Join-Path $projectRoot $source
         if (-not (Test-Path -LiteralPath $sourcePath)) { continue }

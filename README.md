@@ -4,6 +4,10 @@ Local restaurant management: **tables → orders → kitchen → checkout**.
 
 One Node.js server, one SQLite database. Staff use browsers on the local network; customers scan table QR codes. Turkish/English, light/dark themes, responsive layouts.
 
+| Staff floor plan and table account                                               | Customer QR menu                                       |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| ![Floor plan with table status and order](docs/assets/screenshots/workspace.png) | ![Mobile QR menu](docs/assets/screenshots/qr-menu.png) |
+
 ## Quick Start
 
 Requires [Node.js 24+](https://nodejs.org/) and [Python 3.8+](https://www.python.org/).
@@ -64,6 +68,10 @@ python3 scripts/initialize-sqlite.py --database prisma/dev.db
 npm run db:push && npm run dev
 ```
 
+These commands create a new, empty development database. Never run `db:push` against
+an existing restaurant database; `START.bat` and `npm run start:local` upgrade
+installed restaurants automatically (see [Database Upgrade](docs/OPERATIONS.md#database-upgrade)).
+
 | Command                       | Purpose                     |
 | ----------------------------- | --------------------------- |
 | `npm run dev`                 | Development server          |
@@ -85,7 +93,7 @@ npm run db:push && npm run dev
 
 ## Documentation
 
-[Architecture](docs/ARCHITECTURE.md) · [Operations](docs/OPERATIONS.md) · [Tests](tests/README.md)
+[Architecture](docs/ARCHITECTURE.md) · [Operations](docs/OPERATIONS.md) · [Tests](tests/README.md) · [Security](SECURITY.md)
 
 ## License
 
