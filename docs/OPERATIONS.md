@@ -118,6 +118,9 @@ Defaults work without `.env`. Copy [.env.example](../.env.example) to the privat
 
 Legacy `RESTOPOS_` variables remain supported.
 
+Prisma CLI commands use [prisma.config.mjs](../prisma.config.mjs): `TEPSY_DATABASE_URL` from the shell
+environment (not `.env`), otherwise `prisma/dev.db`.
+
 For optional TokenX Connect Cloud itemized bill export, see
 [TokenX integration](TOKENX-INTEGRATION.md). Provider credentials stay in the private
 installation's `.env`; device settings contain only the terminal ID and fiscal

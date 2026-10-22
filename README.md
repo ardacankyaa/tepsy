@@ -58,7 +58,7 @@ external transactions; TEPSY does not approve or initiate bank transfers.
 
 ## Tech Stack
 
-**Next.js 15 · React 18 · Tailwind CSS · Socket.IO · Prisma 5 · SQLite**
+**Next.js 16 · React 19 · Tailwind CSS · Socket.IO · Prisma 7 · SQLite**
 
 ## Development
 

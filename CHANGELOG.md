@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Upgraded to Next.js 16.4 (Turbopack builds), React 19.3, Prisma 7.10 and lucide-react 1.61. `@next/eslint-plugin-next` now matches Next 16; its vulnerable `braces` chain is replaced through an npm override.
+- Prisma 7 runs on the `better-sqlite3` driver adapter. Existing databases need no schema or data migration: the schema is unchanged, and dates are still stored as epoch milliseconds. Database statements queue behind open transactions, so a concurrent write can no longer be rolled back with another request's transaction.
+- Prisma CLI commands read the database from `prisma.config.mjs`: `TEPSY_DATABASE_URL` (or the legacy `RESTOPOS_DATABASE_URL`) from the shell environment, otherwise `prisma/dev.db`. They previously always targeted `prisma/dev.db`.
 - Deleting a category that still contains products is refused; previously the database cascade silently deleted every product in it that had never been ordered.
 - Floor plan saves report a duplicate table name (409) instead of a generic failure and no longer update archived tables.
 - Table change broadcasts carry only the table id and status, keeping QR tokens out of kitchen and other staff sockets.
