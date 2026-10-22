@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Deleting a category that still contains products is refused; previously the database cascade silently deleted every product in it that had never been ordered.
+- Floor plan saves report a duplicate table name (409) instead of a generic failure and no longer update archived tables.
+- Table change broadcasts carry only the table id and status, keeping QR tokens out of kitchen and other staff sockets.
+- Service requests, public menu and session status return controlled JSON errors on database failures. Socket.IO is updated to 4.8.4.
 - Staff order screens explain rejected orders (unavailable product, archived or missing table, invalid quantities) instead of a generic failure; an archived table no longer keeps the draft locked.
 - Approving a QR request through the orders API (`PATCH /api/orders/[id]`) now occupies its table, refuses archived tables and clears the pending request for other staff, matching the QR request panel that the app uses.
 - The startup banner reads the version from `package.json`. Unused `clsx` and `tailwind-merge` dependencies were removed.

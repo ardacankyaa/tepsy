@@ -993,7 +993,11 @@ export default function FloorPlanView({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tables: payload }),
       });
-      if (!res.ok) throw new Error("layout-save-failed");
+      if (!res.ok) {
+        const error = new Error("layout-save-failed");
+        error.status = res.status;
+        throw error;
+      }
 
       saveStage = "canvas";
       if (section && section !== "ALL" && section !== "TÜMÜ") {
@@ -1028,7 +1032,13 @@ export default function FloorPlanView({
             ? "Masa ve salon düzeni kaydedildi, dekorasyon öğeleri kaydedilemedi. Tekrar deneyin."
             : "Tables and venue size saved, but floor elements could not be saved. Try again.",
       };
-      setSaveError(messages[saveStage]);
+      const duplicateName =
+        lang === "tr"
+          ? "Aynı adı taşıyan başka bir masa var. Masa adını değiştirip tekrar kaydedin."
+          : "Another table already uses this name. Rename the table and save again.";
+      setSaveError(
+        saveStage === "tables" && e.status === 409 ? duplicateName : messages[saveStage]
+      );
     } finally {
       setIsSaving(false);
     }

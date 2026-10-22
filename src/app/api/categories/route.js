@@ -84,9 +84,23 @@ export async function DELETE(request) {
       return NextResponse.json({ error: "Kategori ID zorunludur" }, { status: 400 });
     }
 
-    await prisma.category.delete({
-      where: { id },
+    // The schema cascades category deletes to products, so refuse non-empty categories
+    // instead of silently removing every product that was never ordered.
+    const result = await prisma.$transaction(async (tx) => {
+      const productCount = await tx.menuItem.count({ where: { categoryId: id } });
+      if (productCount > 0) return { productCount };
+      await tx.category.delete({ where: { id } });
+      return { productCount: 0 };
     });
+    if (result.productCount > 0)
+      return NextResponse.json(
+        {
+          error:
+            "Ürün içeren kategori silinemez. Önce ürünleri başka kategoriye taşıyın veya satışa kapatın.",
+          code: "category-not-empty",
+        },
+        { status: 409 }
+      );
 
     if (global.io) {
       global.io.emit("menu:update");

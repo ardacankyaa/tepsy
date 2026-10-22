@@ -4,11 +4,17 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
 
 export async function GET() {
-  const requests = await prisma.serviceRequest.findMany({
-    where: { status: "OPEN" },
-    orderBy: { createdAt: "asc" },
-    include: { table: { select: { tableNumber: true } } },
-  });
+  let requests;
+  try {
+    requests = await prisma.serviceRequest.findMany({
+      where: { status: "OPEN" },
+      orderBy: { createdAt: "asc" },
+      include: { table: { select: { tableNumber: true } } },
+    });
+  } catch (error) {
+    console.error("Service requests fetch failed:", error);
+    return NextResponse.json({ error: "Servis istekleri alınamadı." }, { status: 500 });
+  }
   return NextResponse.json(
     requests.map((entry) => ({
       id: entry.id,
@@ -24,27 +30,13 @@ export async function PATCH(request) {
   const body = await request.json().catch(() => ({}));
   if (!body || typeof body.id !== "string" || !body.id || body.action !== "RESOLVE")
     return NextResponse.json({ error: "İstek geçersiz." }, { status: 400 });
-  const result = await prisma.$transaction(async (tx) => {
-    const entry = await tx.serviceRequest.findUnique({
-      where: { id: body.id },
-      include: { table: { select: { tableNumber: true, isArchived: true } } },
-    });
-    if (!entry || entry.status !== "OPEN") return null;
-    const changed = await tx.serviceRequest.updateMany({
-      where: { id: entry.id, status: "OPEN" },
-      data: { status: "RESOLVED", resolvedAt: new Date() },
-    });
-    if (!changed.count) return null;
-    let billRequested = false;
-    if (entry.type === "BILL" && !entry.table.isArchived) {
-      const updated = await tx.table.updateMany({
-        where: { id: entry.tableId, isArchived: false },
-        data: { status: "BILL_REQUESTED" },
-      });
-      billRequested = updated.count > 0;
-    }
-    return { entry, billRequested };
-  });
+  let result;
+  try {
+    result = await resolveRequest(body.id);
+  } catch (error) {
+    console.error("Service request resolution failed:", error);
+    return NextResponse.json({ error: "İstek işlenemedi." }, { status: 500 });
+  }
   if (!result) return NextResponse.json({ error: "Açık istek bulunamadı." }, { status: 409 });
   const { entry, billRequested } = result;
   global.io
@@ -64,4 +56,28 @@ export async function PATCH(request) {
       .emit("table:bill_requested", table);
   }
   return NextResponse.json({ id: entry.id, tableId: entry.tableId, status: "RESOLVED" });
+}
+
+function resolveRequest(id) {
+  return prisma.$transaction(async (tx) => {
+    const entry = await tx.serviceRequest.findUnique({
+      where: { id },
+      include: { table: { select: { tableNumber: true, isArchived: true } } },
+    });
+    if (!entry || entry.status !== "OPEN") return null;
+    const changed = await tx.serviceRequest.updateMany({
+      where: { id: entry.id, status: "OPEN" },
+      data: { status: "RESOLVED", resolvedAt: new Date() },
+    });
+    if (!changed.count) return null;
+    let billRequested = false;
+    if (entry.type === "BILL" && !entry.table.isArchived) {
+      const updated = await tx.table.updateMany({
+        where: { id: entry.tableId, isArchived: false },
+        data: { status: "BILL_REQUESTED" },
+      });
+      billRequested = updated.count > 0;
+    }
+    return { entry, billRequested };
+  });
 }

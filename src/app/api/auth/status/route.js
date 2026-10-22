@@ -7,66 +7,71 @@ import { currentStaffSession } from "@/lib/security-policy.cjs";
 import { canRunSetup, isLoopbackAddress } from "@/lib/setup-policy.cjs";
 
 export async function GET(request) {
-  const [config, staffCount] = await Promise.all([
-    prisma.restaurantConfig.findFirst({
-      select: {
-        restaurantName: true,
-        isSetupCompleted: true,
-        ownerName: true,
-        restaurantCode: true,
-        authEnabled: true,
-        accessPasswordHash: true,
-      },
-    }),
-    prisma.staffUser.count({ where: { isActive: true } }),
-  ]);
-  let canSetup = false;
-  if (!config?.isSetupCompleted && !config?.accessPasswordHash) {
-    const [tables, orders, payments, staff, categories] = await Promise.all([
-      prisma.table.count(),
-      prisma.order.count(),
-      prisma.payment.count(),
-      prisma.staffUser.count(),
-      prisma.category.count(),
-    ]);
-    canSetup = canRunSetup({
-      tables,
-      orders,
-      payments,
-      staff,
-      categories,
-      isSetupCompleted: config?.isSetupCompleted,
-      hasAccessPassword: Boolean(config?.accessPasswordHash),
-    });
-  }
-  const session = await currentStaffSession(
-    sessionFromRequest(request),
-    (id) =>
-      prisma.staffUser.findUnique({
-        where: { id },
-        select: { id: true, role: true, isActive: true, updatedAt: true },
+  try {
+    const [config, staffCount] = await Promise.all([
+      prisma.restaurantConfig.findFirst({
+        select: {
+          restaurantName: true,
+          isSetupCompleted: true,
+          ownerName: true,
+          restaurantCode: true,
+          authEnabled: true,
+          accessPasswordHash: true,
+        },
       }),
-    credentialSessionVersion(config?.accessPasswordHash)
-  );
-  return NextResponse.json({
-    service: "tepsy",
-    restaurantName: config?.restaurantName || "TEPSY",
-    ownerName: config?.ownerName || "",
-    restaurantCode: config?.restaurantCode || "TEPSY",
-    authEnabled: Boolean(config?.authEnabled && config?.accessPasswordHash),
-    hasStaff: staffCount > 0,
-    isSetupCompleted: Boolean(config?.isSetupCompleted),
-    canSetup,
-    canRecoverOwner: Boolean(
-      config?.accessPasswordHash && isLoopbackAddress(request.headers.get("x-tepsy-client-ip"))
-    ),
-    canCreateRestaurant: Boolean(
-      config?.accessPasswordHash &&
-      config?.isSetupCompleted &&
-      config?.authEnabled &&
-      process.env.TEPSY_DEMO_MODE !== "1" &&
-      isLoopbackAddress(request.headers.get("x-tepsy-client-ip"))
-    ),
-    session,
-  });
+      prisma.staffUser.count({ where: { isActive: true } }),
+    ]);
+    let canSetup = false;
+    if (!config?.isSetupCompleted && !config?.accessPasswordHash) {
+      const [tables, orders, payments, staff, categories] = await Promise.all([
+        prisma.table.count(),
+        prisma.order.count(),
+        prisma.payment.count(),
+        prisma.staffUser.count(),
+        prisma.category.count(),
+      ]);
+      canSetup = canRunSetup({
+        tables,
+        orders,
+        payments,
+        staff,
+        categories,
+        isSetupCompleted: config?.isSetupCompleted,
+        hasAccessPassword: Boolean(config?.accessPasswordHash),
+      });
+    }
+    const session = await currentStaffSession(
+      sessionFromRequest(request),
+      (id) =>
+        prisma.staffUser.findUnique({
+          where: { id },
+          select: { id: true, role: true, isActive: true, updatedAt: true },
+        }),
+      credentialSessionVersion(config?.accessPasswordHash)
+    );
+    return NextResponse.json({
+      service: "tepsy",
+      restaurantName: config?.restaurantName || "TEPSY",
+      ownerName: config?.ownerName || "",
+      restaurantCode: config?.restaurantCode || "TEPSY",
+      authEnabled: Boolean(config?.authEnabled && config?.accessPasswordHash),
+      hasStaff: staffCount > 0,
+      isSetupCompleted: Boolean(config?.isSetupCompleted),
+      canSetup,
+      canRecoverOwner: Boolean(
+        config?.accessPasswordHash && isLoopbackAddress(request.headers.get("x-tepsy-client-ip"))
+      ),
+      canCreateRestaurant: Boolean(
+        config?.accessPasswordHash &&
+        config?.isSetupCompleted &&
+        config?.authEnabled &&
+        process.env.TEPSY_DEMO_MODE !== "1" &&
+        isLoopbackAddress(request.headers.get("x-tepsy-client-ip"))
+      ),
+      session,
+    });
+  } catch (error) {
+    console.error("Auth status failed:", error);
+    return NextResponse.json({ error: "Oturum durumu alınamadı." }, { status: 500 });
+  }
 }

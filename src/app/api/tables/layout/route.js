@@ -27,7 +27,7 @@ async function handleLayoutUpdate(request) {
         dataToUpdate.tableNumber = String(t.tableNumber).trim().slice(0, 40);
 
       return prisma.table.update({
-        where: { id: t.id },
+        where: { id: t.id, isArchived: false },
         data: dataToUpdate,
       });
     });
@@ -43,6 +43,13 @@ async function handleLayoutUpdate(request) {
   } catch (error) {
     if (error instanceof SyntaxError)
       return NextResponse.json({ error: "Geçersiz JSON isteği." }, { status: 400 });
+    if (error?.code === "P2002")
+      return NextResponse.json({ error: "Bu masa adı zaten kullanılıyor." }, { status: 409 });
+    if (error?.code === "P2025")
+      return NextResponse.json(
+        { error: "Masa bulunamadı veya arşivlendi; krokiyi yenileyin." },
+        { status: 404 }
+      );
     console.error("Kroki yerleşim kaydetme hatası:", error);
     return NextResponse.json({ error: "Kroki yerleşimi kaydedilemedi" }, { status: 500 });
   }

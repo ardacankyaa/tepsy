@@ -13,6 +13,9 @@ import { preferTableOrderItemNameSnapshots } from "@/lib/order-idempotency-serve
 import { normalizeTableInput, TableInputError } from "@/lib/table-input.cjs";
 import { itemAvailability } from "@/lib/item-payments.mjs";
 
+// Broadcasts reach every staff role; the table's QR token stays out of them.
+const tableEvent = (table) => ({ id: table.id, status: table.status });
+
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
@@ -101,7 +104,7 @@ export async function POST(req) {
     });
 
     if (global.io) {
-      global.io.emit("table:update", newTable);
+      global.io.emit("table:update", tableEvent(newTable));
       global.io.emit("table:layout_update", { tableId: newTable.id });
     }
 
@@ -174,7 +177,7 @@ export async function PUT(req) {
     });
 
     if (global.io) {
-      global.io.emit("table:update", updatedTable);
+      global.io.emit("table:update", tableEvent(updatedTable));
       if (status === "BILL_REQUESTED") {
         global.io.emit("table:bill_requested", {
           tableId: updatedTable.id,
