@@ -259,6 +259,9 @@ export default function PosPage() {
     socket.on("payment:completed", handleTableUpdate);
     socket.on("floor-elements:update", handleTableUpdate);
     socket.on("floorplan:canvas_update", handleCanvasUpdate);
+    // An already connected socket may have delivered shift or table events before
+    // these listeners existed; catch up once instead of waiting for a reconnect.
+    if (socket.connected) handleConnect();
     return () => {
       socket.off("connect", handleConnect);
       socket.off("cash-shift:opened", fetchShift);
