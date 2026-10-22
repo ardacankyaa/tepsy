@@ -1,7 +1,8 @@
 const { createHash } = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
-const { DatabaseSync } = require("node:sqlite");
+// Turbopack cannot bundle a CommonJS reference to node:sqlite; load the builtin at runtime.
+const { DatabaseSync } = process.getBuiltinModule("node:sqlite");
 const { resolveStateFile } = require("../../scripts/runtime-config.cjs");
 
 function filename() {

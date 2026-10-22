@@ -36,7 +36,7 @@ export default [
     rules: { "react-hooks/rules-of-hooks": "error", "react-hooks/exhaustive-deps": "warn" },
   },
   {
-    // Keep these four syntax checks without the unpatched braces dependency in newer plugins.
+    // Keep these four syntax checks; package.json swaps the plugin's fast-glob (unpatched braces) for tinyglobby.
     plugins: { "@next/next": fixupPluginRules(next) },
     rules: {
       "@next/next/no-head-element": "error",
