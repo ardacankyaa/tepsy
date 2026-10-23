@@ -28,6 +28,7 @@ const crypto = require("crypto");
 const { createPrismaClient } = require("./src/lib/prisma-client.cjs");
 const {
   allowedRolesForPath,
+  isPublicPath,
   currentStaffSession,
   requiresLocalBootstrap,
   scheduleSessionExpiryDisconnect,
@@ -38,10 +39,10 @@ const { credentialSessionVersion } = require("./src/lib/owner-auth-version.cjs")
 const { selectLocalIPv4 } = require("./src/lib/network-address.cjs");
 const { createBootstrapAccessResponse } = require("./src/lib/bootstrap-required-response.cjs");
 const { canAccessInitialSetup } = require("./src/lib/setup-policy.cjs");
-const { isLegalPath } = require("./src/lib/legal-paths.cjs");
 const { isAllowedRequestHost } = require("./src/lib/request-host.cjs");
 const { sessionTokenKey } = require("./src/lib/session-revocation.cjs");
 const { verifySessionToken: verifyLocalSession } = require("./src/lib/session-token.cjs");
+const { canonicalRequestPath, policyRequestPath } = require("./src/lib/request-path.cjs");
 
 const localStateDirectory = path.join(process.cwd(), ".tepsy");
 fs.mkdirSync(localStateDirectory, { recursive: true });
@@ -94,32 +95,6 @@ function readCookie(cookieHeader, name) {
     .map((part) => part.trim())
     .find((part) => part.startsWith(`${name}=`));
   return match ? decodeCookieValue(match.slice(name.length + 1)) : "";
-}
-
-function isPublicPath(pathname, config) {
-  return (
-    pathname === "/login" ||
-    pathname === "/account-help" ||
-    isLegalPath(pathname) ||
-    /^\/menu\/[^/]+$/.test(pathname) ||
-    pathname === "/api/public/menu" ||
-    /^\/api\/public\/menu-images\/[a-f0-9]{64}\.webp$/.test(pathname) ||
-    pathname === "/api/public/orders" ||
-    pathname === "/api/public/service-requests" ||
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/api/auth") ||
-    ((pathname === "/setup" || pathname.startsWith("/api/setup")) && !config?.isSetupCompleted) ||
-    pathname === "/favicon.ico" ||
-    pathname === "/icon.png" ||
-    [
-      "/apple-icon.png",
-      "/manifest.webmanifest",
-      "/brand/logo.png",
-      "/brand/mark.png",
-      "/brand/app-192.png",
-      "/brand/app-512.png",
-    ].includes(pathname)
-  );
 }
 
 function hasTrustedOrigin(req) {
@@ -217,8 +192,23 @@ async function startServer() {
         "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' ws: wss:"
       );
 
-      const requestUrl = new URL(req.url, `http://${req.headers.host || `localhost:${port}`}`);
-      const pathname = requestUrl.pathname;
+      // Next.js routes the decoded path; every check below uses that same canonical form.
+      const pathname = canonicalRequestPath(req.url);
+      if (pathname === null) {
+        const isApi = /^\/api(?:\/|%2f|$)/i.test(String(req.url || ""));
+        res.statusCode = 400;
+        res.setHeader(
+          "Content-Type",
+          isApi ? "application/json; charset=utf-8" : "text/plain; charset=utf-8"
+        );
+        res.setHeader("Cache-Control", "no-store");
+        res.end(
+          isApi ? JSON.stringify({ error: "Invalid request path." }) : "Invalid request path"
+        );
+        return;
+      }
+      const policyPath = policyRequestPath(pathname);
+      const requestUrl = new URL(req.url, `http://localhost:${port}`);
       // Older browsers may request this URL before streamed metadata arrives.
       if (pathname === "/favicon.ico") req.url = "/icon.png";
       req.headers["x-tepsy-client-ip"] = req.socket.remoteAddress || "";
@@ -309,9 +299,9 @@ async function startServer() {
             }),
           credentialSessionVersion(config.accessPasswordHash)
         );
-        const requiredRoles = allowedRolesForPath(pathname, req.method);
+        const requiredRoles = allowedRolesForPath(policyPath, req.method);
         if (!session || !requiredRoles.includes(session.role)) {
-          if (pathname.startsWith("/api/")) {
+          if (policyPath.startsWith("/api/")) {
             res.statusCode = session ? 403 : 401;
             res.setHeader("Content-Type", "application/json; charset=utf-8");
             res.end(JSON.stringify({ error: session ? "Forbidden." : "Authentication required." }));

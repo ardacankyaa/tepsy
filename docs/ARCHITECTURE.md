@@ -27,6 +27,10 @@ One installation serves one restaurant. SQLite uses WAL and `synchronous=FULL` o
 
 API routes: `src/app/api/`. Permission rules: `src/lib/security-policy.cjs`.
 
+The gateway evaluates roles on the decoded request path that Next.js routes
+(`src/lib/request-path.cjs`). Paths with malformed escapes, encoded `/` or ``,
+dot segments or repeated slashes are refused with 400.
+
 ## Order Flow
 
 Staff orders enter `PENDING`. QR orders enter `AWAITING_WAITER_APPROVAL` first. Preparation: `PREPARING` → `READY` → `DELIVERED` → `PAID`. The server validates quantities, availability and current prices.

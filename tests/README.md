@@ -110,6 +110,12 @@ See [TokenX setup and limitations](../docs/TOKENX-INTEGRATION.md).
 
 ## Security regressions
 
+`route-access-matrix.test.cjs` lists every API route and staff screen with the
+roles the gateway admits, and checks each role and anonymous access against
+percent-encoded, case-changed and trailing-slash spellings. Encoded separators,
+dot segments and malformed escapes must be refused. A new route file fails the
+test until it is listed.
+
 `socket-authorization-race.test.cjs` covers a staff access change or owner password
 change while a Socket.IO handshake is pending, including the interval before
 registration and initial local bootstrap. Independent API/host module copies must

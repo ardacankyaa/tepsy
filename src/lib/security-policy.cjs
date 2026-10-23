@@ -1,3 +1,5 @@
+const { isLegalPath } = require("./legal-paths.cjs");
+
 const ALL_STAFF = ["ADMIN", "WAITER", "KITCHEN", "CASHIER"];
 
 function decodeCookieValue(value) {
@@ -53,6 +55,33 @@ function allowedRolesForPath(pathname, method = "GET") {
   if (pathname.startsWith("/api/") && !["GET", "HEAD", "OPTIONS"].includes(method))
     return ["ADMIN"];
   return ALL_STAFF;
+}
+
+// Paths reachable without a staff session. `pathname` must be canonical (see request-path.cjs).
+function isPublicPath(pathname, config) {
+  return (
+    pathname === "/login" ||
+    pathname === "/account-help" ||
+    isLegalPath(pathname) ||
+    /^\/menu\/[^/]+$/.test(pathname) ||
+    pathname === "/api/public/menu" ||
+    /^\/api\/public\/menu-images\/[a-f0-9]{64}\.webp$/.test(pathname) ||
+    pathname === "/api/public/orders" ||
+    pathname === "/api/public/service-requests" ||
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/api/auth") ||
+    ((pathname === "/setup" || pathname.startsWith("/api/setup")) && !config?.isSetupCompleted) ||
+    pathname === "/favicon.ico" ||
+    pathname === "/icon.png" ||
+    [
+      "/apple-icon.png",
+      "/manifest.webmanifest",
+      "/brand/logo.png",
+      "/brand/mark.png",
+      "/brand/app-192.png",
+      "/brand/app-512.png",
+    ].includes(pathname)
+  );
 }
 
 async function currentStaffSession(signedSession, lookup, credentialVersion) {
@@ -157,6 +186,7 @@ function invalidateAuthConfigCache() {
 
 module.exports = {
   allowedRolesForPath,
+  isPublicPath,
   canBootstrapPasswordChange,
   canChangeOwnerPassword,
   getSocketAuthorizationRevision,

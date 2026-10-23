@@ -123,8 +123,14 @@ test("unchanged authorization keeps valid pending staff connections usable", asy
 
 test("independent API and host module copies share pending-handshake invalidation", () => {
   const moduleCopy = { exports: {} };
-  const source = fs.readFileSync(path.resolve(__dirname, "../src/lib/security-policy.cjs"), "utf8");
-  new Function("module", "exports", source)(moduleCopy, moduleCopy.exports);
+  const file = path.resolve(__dirname, "../src/lib/security-policy.cjs");
+  const source = fs.readFileSync(file, "utf8");
+  const moduleRequire = require("node:module").createRequire(file);
+  new Function("module", "exports", "require", source)(
+    moduleCopy,
+    moduleCopy.exports,
+    moduleRequire
+  );
   const before = security.getSocketAuthorizationRevision();
   moduleCopy.exports.disconnectStaffSockets(undefined, "staff-1");
   assert.equal(security.getSocketAuthorizationRevision(), before + 1);
