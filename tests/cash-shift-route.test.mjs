@@ -3,6 +3,17 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import * as finance from "../src/lib/finance.mjs";
 import * as cashShift from "../src/lib/cash-shift.mjs";
+// Request doubles expose json(); real-stream size limits are covered in request-body tests.
+const readRequestJson = async (request) => {
+  try {
+    return await request.json();
+  } catch {
+    throw Object.assign(new Error("Invalid JSON request body."), {
+      code: "invalid-json-body",
+      status: 400,
+    });
+  }
+};
 
 const source = (
   await readFile(new URL("../src/app/api/pos/shift/route.js", import.meta.url), "utf8")
@@ -64,6 +75,7 @@ function makeRoute(closed = false) {
     }
   };
   const dependencies = {
+    readRequestJson,
     ...finance,
     ...cashShift,
     prisma: client,

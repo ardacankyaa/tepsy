@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
+import { readRequestJson } from "@/lib/request-json.mjs";
 import prisma from "@/lib/db";
 import { recordAudit } from "@/lib/audit.mjs";
 import {
@@ -362,9 +363,13 @@ export async function POST(request) {
     await authorizePaymentAccess(request, prisma);
     let body;
     try {
-      body = await request.json();
-    } catch {
-      throw new PaymentRequestError(400, "invalid-json", "Geçersiz JSON isteği.");
+      body = await readRequestJson(request, { maxBytes: 256 * 1024 });
+    } catch (error) {
+      throw new PaymentRequestError(
+        error?.status || 400,
+        "invalid-json",
+        "Geçersiz veya çok büyük JSON isteği."
+      );
     }
     parsed = parsePaymentRequest(body);
 

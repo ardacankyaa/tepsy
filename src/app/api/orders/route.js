@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
+import { readRequestJson } from "@/lib/request-json.mjs";
 import prisma from "@/lib/db";
 import { requireStaffRole } from "@/lib/route-access.mjs";
 import { recordAudit } from "@/lib/audit.mjs";
@@ -90,9 +91,12 @@ export async function POST(req) {
   try {
     let body;
     try {
-      body = await req.json();
-    } catch {
-      return NextResponse.json({ error: "Geçersiz JSON isteği." }, { status: 400 });
+      body = await readRequestJson(req, { maxBytes: 128 * 1024 });
+    } catch (error) {
+      return NextResponse.json(
+        { error: "Geçersiz veya çok büyük JSON isteği." },
+        { status: error?.status || 400 }
+      );
     }
     const input = normalizeOrderRequest(body);
     const idempotencyKey = optionalOrderIdempotencyKey(body);

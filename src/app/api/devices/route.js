@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
+import { readRequestJson } from "@/lib/request-json.mjs";
 import prisma from "@/lib/db";
 import { requireStaffRole } from "@/lib/route-access.mjs";
 import { readDeviceConfig, writeDeviceConfig } from "@/lib/devices/config";
@@ -30,10 +31,15 @@ export async function PUT(request) {
   const access = await requireStaffRole(request, prisma, ["ADMIN"]);
   if (access.denied) return access.denied;
   try {
-    const body = await request.json();
+    const body = await readRequestJson(request);
     const config = await writeDeviceConfig(body);
     return NextResponse.json({ success: true, config });
   } catch (error) {
+    if (error?.code === "invalid-json-body")
+      return NextResponse.json(
+        { error: "Geçersiz veya çok büyük JSON isteği.", code: "invalid-json" },
+        { status: error.status }
+      );
     console.error("Device config write error:", error);
     const invalid = error instanceof SyntaxError || !error?.code;
     return NextResponse.json(

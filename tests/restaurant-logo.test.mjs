@@ -5,10 +5,22 @@ import logo from "../src/lib/restaurant-logo.cjs";
 import setupPolicy from "../src/lib/setup-policy.cjs";
 import trusted from "../src/lib/trusted-client.cjs";
 import { requireStaffRole } from "../src/lib/route-access.mjs";
+// Request doubles expose json(); real-stream size limits are covered in request-body tests.
+const readRequestJson = async (request) => {
+  try {
+    return await request.json();
+  } catch {
+    throw Object.assign(new Error("Invalid JSON request body."), {
+      code: "invalid-json-body",
+      status: 400,
+    });
+  }
+};
 const imageUrl = "/api/public/menu-images/" + "a".repeat(64) + ".webp";
 const json = (body, options = {}) => ({ body, status: options.status || 200 });
 async function route(name, routeDependencies) {
   const dependencies = {
+    readRequestJson,
     requireStaffRole: async () => ({ session: { userId: "owner", role: "ADMIN" } }),
     ...routeDependencies,
   };

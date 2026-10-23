@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
+import { readRequestJson } from "@/lib/request-json.mjs";
 import { execFile } from "node:child_process";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -64,9 +65,12 @@ export async function POST(request) {
     }
     let body;
     try {
-      body = await request.json();
-    } catch {
-      return NextResponse.json({ error: "Geçersiz JSON isteği." }, { status: 400 });
+      body = await readRequestJson(request);
+    } catch (error) {
+      return NextResponse.json(
+        { error: "Geçersiz JSON isteği." },
+        { status: error?.status || 400 }
+      );
     }
     if (!body || typeof body !== "object" || Array.isArray(body)) {
       return NextResponse.json({ error: "Geçersiz sıfırlama modu." }, { status: 400 });

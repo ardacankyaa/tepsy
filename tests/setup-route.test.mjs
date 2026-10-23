@@ -7,12 +7,24 @@ import menuInput from "../src/lib/menu-input.cjs";
 import setupCredentials from "../src/lib/setup-credentials.cjs";
 import restaurantLogo from "../src/lib/restaurant-logo.cjs";
 import { hashCredential, verifyCredential } from "../src/lib/auth-local.js";
+// Request doubles expose json(); real-stream size limits are covered in request-body tests.
+const readRequestJson = async (request) => {
+  try {
+    return await request.json();
+  } catch {
+    throw Object.assign(new Error("Invalid JSON request body."), {
+      code: "invalid-json-body",
+      status: 400,
+    });
+  }
+};
 
 const response = (body, options = {}) => ({ body, status: options.status ?? 200 });
 
 async function loadRoute(path, routeDependencies) {
   // Role checks are covered by route-access tests; these cases exercise route logic.
   const dependencies = {
+    readRequestJson,
     requireStaffRole: async () => ({ session: { userId: "owner", role: "ADMIN" } }),
     ...routeDependencies,
   };

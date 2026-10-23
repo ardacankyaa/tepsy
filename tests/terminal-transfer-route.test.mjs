@@ -4,6 +4,17 @@ import { readFile } from "node:fs/promises";
 import { parsePaymentRequest, PaymentRequestError } from "../src/lib/payment-request.mjs";
 import { requireOpenCashShift } from "../src/lib/cash-shift.mjs";
 import { allowedRolesForPath } from "../src/lib/security-policy.cjs";
+// Request doubles expose json(); real-stream size limits are covered in request-body tests.
+const readRequestJson = async (request) => {
+  try {
+    return await request.json();
+  } catch {
+    throw Object.assign(new Error("Invalid JSON request body."), {
+      code: "invalid-json-body",
+      status: 400,
+    });
+  }
+};
 
 const source = (
   await readFile(new URL("../src/app/api/pos/terminal/route.js", import.meta.url), "utf8")
@@ -15,6 +26,7 @@ function route({ denied = false, shift = true, enabled = true } = {}) {
     configReads = 0,
     accountReads = 0;
   const dependencies = {
+    readRequestJson,
     NextResponse: { json: (data, options = {}) => ({ data, status: options.status || 200 }) },
     authorizePaymentAccess: async () => {
       if (denied) throw new PaymentRequestError(403, "forbidden", "Forbidden");

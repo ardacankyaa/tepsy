@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
+import { readRequestJson } from "@/lib/request-json.mjs";
 import prisma from "@/lib/db";
 import { requireStaffRole } from "@/lib/route-access.mjs";
 import {
@@ -64,9 +65,9 @@ export async function PUT(request) {
   if (access.denied) return access.denied;
   let body;
   try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Geçerli JSON gerekli." }, { status: 400 });
+    body = await readRequestJson(request);
+  } catch (error) {
+    return NextResponse.json({ error: "Geçerli JSON gerekli." }, { status: error?.status || 400 });
   }
 
   const validation = validateCanvasSettings(body);

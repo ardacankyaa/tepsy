@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
+import { readRequestJson } from "@/lib/request-json.mjs";
 import fs from "node:fs/promises";
 import { createReadStream } from "node:fs";
 import { Readable } from "node:stream";
@@ -37,7 +38,7 @@ export async function POST(request) {
     if (denied) return denied;
     const action = new URL(request.url).searchParams.get("action") || "create";
     if (action === "plan") {
-      const plan = await recovery.saveBackupPlan(await request.json());
+      const plan = await recovery.saveBackupPlan(await readRequestJson(request));
       await recordAudit(prisma, request, "BACKUP_PLAN", "backup", {
         enabled: plan.plan.enabled,
         intervalHours: plan.plan.intervalHours,
@@ -92,6 +93,11 @@ export async function POST(request) {
       },
     });
   } catch (error) {
+    if (error?.code === "invalid-json-body")
+      return NextResponse.json(
+        { error: "Geçersiz veya çok büyük JSON isteği.", code: "invalid-json" },
+        { status: error.status }
+      );
     console.error("Recovery backup failed", error);
     return NextResponse.json(
       {

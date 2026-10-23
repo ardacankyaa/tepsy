@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
+import { readRequestJson } from "@/lib/request-json.mjs";
 import prisma from "@/lib/db";
 import { centsToMoney, moneyToCents } from "@/lib/finance.mjs";
 import {
@@ -106,9 +107,9 @@ function summarizeClosedShift(shift) {
 
 async function readJson(request) {
   try {
-    return await request.json();
-  } catch {
-    throw new CashShiftError(400, "invalid-json", "Geçersiz JSON isteği.");
+    return await readRequestJson(request);
+  } catch (error) {
+    throw new CashShiftError(error?.status || 400, "invalid-json", "Geçersiz JSON isteği.");
   }
 }
 

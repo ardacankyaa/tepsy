@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
+import { readRequestJson } from "@/lib/request-json.mjs";
 import prisma from "@/lib/db";
 import { credentialSessionVersion, hashCredential, sessionFromRequest } from "@/lib/auth-local";
 import { currentStaffSession, disconnectStaffSockets } from "@/lib/security-policy.cjs";
@@ -39,7 +40,7 @@ export async function POST(request) {
   const actor = await authorize(request);
   if (!actor) return NextResponse.json({ error: "Yetkisiz." }, { status: 403 });
   try {
-    const body = await request.json();
+    const body = await readRequestJson(request);
     const { name, role, pin } = normalizeStaffCreate(body);
     if (role === "ADMIN" && actor.userId !== "owner") return ownerOnly();
     const user = await prisma.staffUser.create({
@@ -47,6 +48,11 @@ export async function POST(request) {
     });
     return NextResponse.json(publicUser(user), { status: 201 });
   } catch (error) {
+    if (error?.code === "invalid-json-body")
+      return NextResponse.json(
+        { error: "Geçersiz veya çok büyük JSON isteği.", code: "invalid-json" },
+        { status: error.status }
+      );
     if (error instanceof SyntaxError || error.message === "Geçersiz personel bilgisi.") {
       return NextResponse.json(
         { error: error instanceof SyntaxError ? "Geçersiz JSON isteği." : error.message },
@@ -62,7 +68,7 @@ export async function PUT(request) {
   const actor = await authorize(request);
   if (!actor) return NextResponse.json({ error: "Yetkisiz." }, { status: 403 });
   try {
-    const body = await request.json();
+    const body = await readRequestJson(request);
     const update = normalizeStaffUpdate(body);
     const user = await prisma.$transaction(async (tx) => {
       const target = await tx.staffUser.findUnique({ where: { id: body.id } });
@@ -84,6 +90,11 @@ export async function PUT(request) {
     disconnectStaffSockets(global.io, user.id);
     return NextResponse.json(publicUser(user));
   } catch (error) {
+    if (error?.code === "invalid-json-body")
+      return NextResponse.json(
+        { error: "Geçersiz veya çok büyük JSON isteği.", code: "invalid-json" },
+        { status: error.status }
+      );
     if (error instanceof SyntaxError)
       return NextResponse.json({ error: "Geçersiz JSON isteği." }, { status: 400 });
     if (error.message === "Geçersiz personel bilgisi.")

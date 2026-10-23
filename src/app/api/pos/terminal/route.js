@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
+import { readRequestJson } from "@/lib/request-json.mjs";
 import prisma from "@/lib/db";
 import { authorizePaymentAccess } from "@/lib/payment-access.mjs";
 import { parsePaymentRequest, PaymentRequestError } from "@/lib/payment-request.mjs";
@@ -16,7 +17,7 @@ import {
 export async function POST(request) {
   try {
     await authorizePaymentAccess(request, prisma);
-    const parsed = parsePaymentRequest(await request.json());
+    const parsed = parsePaymentRequest(await readRequestJson(request, { maxBytes: 256 * 1024 }));
     if (parsed.selectedItems || parsed.tipCents) {
       throw new PaymentRequestError(
         409,
@@ -44,6 +45,11 @@ export async function POST(request) {
       { headers: { "Cache-Control": "no-store" } }
     );
   } catch (error) {
+    if (error?.code === "invalid-json-body")
+      return NextResponse.json(
+        { accepted: false, code: "invalid-json", error: "Geçersiz veya çok büyük JSON isteği." },
+        { status: error.status }
+      );
     if (error instanceof SyntaxError)
       return NextResponse.json(
         { accepted: false, code: "invalid-json", error: "Geçersiz JSON isteği." },

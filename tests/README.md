@@ -134,6 +134,11 @@ cart, and checks a stalled input deadline. Login remains limited to 16 KiB; publ
 JSON mutations are limited to 32 KiB. Real integration verifies HTTP 413 for both
 declared-length and chunked requests.
 
+`staff-request-body.test.mjs` sends oversized, endless and malformed bodies to the
+payment and order update handlers and checks that no API route parses an
+unbounded body. Staff JSON routes default to 32 KiB; orders allow 128 KiB, payments,
+terminal transfers and receipts 256 KiB, floor layouts 1 MiB and setup 2 MiB.
+
 `cash-shift-route.test.mjs` checks negative derived drawer differences on close,
 history and replay while negative cash counts and payments remain forbidden.
 Integration concurrently sends checkout retries, independent full-payment requests,

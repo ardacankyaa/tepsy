@@ -1,6 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+// Request doubles expose json(); real-stream size limits are covered in request-body tests.
+const readRequestJson = async (request) => {
+  try {
+    return await request.json();
+  } catch {
+    throw Object.assign(new Error("Invalid JSON request body."), {
+      code: "invalid-json-body",
+      status: 400,
+    });
+  }
+};
 
 const source = (
   await readFile(new URL("../src/app/api/service-requests/route.js", import.meta.url), "utf8")
@@ -11,12 +22,14 @@ const NextResponse = { json: (body, options = {}) => ({ body, status: options.st
 // Role checks are covered by the route access tests; these cases exercise resolution.
 const allowWaiter = async () => ({ session: { userId: "waiter-1", role: "WAITER" } });
 const loadPatch = (prisma, io) =>
-  new Function("NextResponse", "prisma", "global", "requireStaffRole", `${source}\nreturn PATCH;`)(
-    NextResponse,
-    prisma,
-    { io },
-    allowWaiter
-  );
+  new Function(
+    "NextResponse",
+    "prisma",
+    "global",
+    "requireStaffRole",
+    "readRequestJson",
+    `${source}\nreturn PATCH;`
+  )(NextResponse, prisma, { io }, allowWaiter, readRequestJson);
 
 for (const type of ["BILL", "WAITER"]) {
   test(`${type} resolution updates the correct table and notifies checkout only for a bill`, async () => {

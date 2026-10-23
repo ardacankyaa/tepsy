@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
+import { readRequestJson } from "@/lib/request-json.mjs";
 import prisma from "@/lib/db";
 import { requireStaffRole } from "@/lib/route-access.mjs";
 
@@ -32,7 +33,12 @@ export async function GET(request) {
 export async function PATCH(request) {
   const access = await requireStaffRole(request, prisma, ["ADMIN", "WAITER"]);
   if (access.denied) return access.denied;
-  const body = await request.json().catch(() => ({}));
+  let body;
+  try {
+    body = await readRequestJson(request);
+  } catch (error) {
+    return NextResponse.json({ error: "İstek geçersiz." }, { status: error?.status || 400 });
+  }
   if (!body || typeof body.id !== "string" || !body.id || body.action !== "RESOLVE")
     return NextResponse.json({ error: "İstek geçersiz." }, { status: 400 });
   let result;

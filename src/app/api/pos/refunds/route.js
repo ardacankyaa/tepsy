@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
+import { readRequestJson } from "@/lib/request-json.mjs";
 import prisma from "@/lib/db";
 import { authorizePaymentAccess } from "@/lib/payment-access.mjs";
 import { auditActor } from "@/lib/audit.mjs";
@@ -11,12 +12,17 @@ export async function POST(request) {
     const actor = await authorizePaymentAccess(request, prisma);
     if (actor && actor.role !== "ADMIN")
       throw new PaymentRequestError(403, "forbidden", "İadeyi yalnızca yönetici kaydedebilir.");
-    const input = parseRefund(await request.json());
+    const input = parseRefund(await readRequestJson(request));
     // SQLite serializes writers. Retries retain their original key; never redo an external refund.
     const result = await prisma.$transaction((tx) => refundPayment(tx, input, auditActor(request)));
     if (!result.replay) global.io?.emit("payment:completed", { refundId: result.response.id });
     return NextResponse.json(result.response, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
+    if (error?.code === "invalid-json-body")
+      return NextResponse.json(
+        { error: "Geçersiz veya çok büyük JSON isteği.", code: "invalid-json" },
+        { status: error.status }
+      );
     if (error instanceof PaymentRequestError)
       return NextResponse.json(
         { error: error.message, code: error.code },

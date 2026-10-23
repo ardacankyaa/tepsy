@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
+import { readRequestJson } from "@/lib/request-json.mjs";
 import prisma from "@/lib/db";
 import { requireStaffRole } from "@/lib/route-access.mjs";
 import { DEFAULT_FLOOR_ELEMENTS } from "@/lib/floor-elements.mjs";
@@ -97,7 +98,7 @@ export async function POST(request) {
   const access = await requireStaffRole(request, prisma, ["ADMIN"]);
   if (access.denied) return access.denied;
   try {
-    const input = normalizeInput(await request.json());
+    const input = normalizeInput(await readRequestJson(request, { maxBytes: 2048 * 1024 }));
     if (input.error) return NextResponse.json({ error: input.error }, { status: 400 });
 
     const accessPasswordHash = hashCredential(input.ownerPassword);
@@ -206,6 +207,11 @@ export async function POST(request) {
     }
     return NextResponse.json({ success: true, message: "Restoran başarıyla kuruldu!" });
   } catch (error) {
+    if (error?.code === "invalid-json-body")
+      return NextResponse.json(
+        { error: "Geçersiz veya çok büyük JSON isteği.", code: "invalid-json" },
+        { status: error.status }
+      );
     if (error instanceof SyntaxError || error?.status === 400)
       return NextResponse.json(
         { error: error?.status === 400 ? error.message : "Geçersiz JSON." },

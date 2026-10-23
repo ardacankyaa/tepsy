@@ -4,6 +4,17 @@ import { readFile } from "node:fs/promises";
 import { readPaymentReceipt } from "../src/lib/payment-receipts.mjs";
 import { PaymentRequestError } from "../src/lib/payment-request.mjs";
 import { validateReceipt } from "../src/lib/devices/validation.js";
+// Request doubles expose json(); real-stream size limits are covered in request-body tests.
+const readRequestJson = async (request) => {
+  try {
+    return await request.json();
+  } catch {
+    throw Object.assign(new Error("Invalid JSON request body."), {
+      code: "invalid-json-body",
+      status: 400,
+    });
+  }
+};
 
 const source = (
   await readFile(new URL("../src/app/api/print/receipt/route.js", import.meta.url), "utf8")
@@ -33,6 +44,7 @@ test("payment receipt printing uses immutable database amounts and currency even
   };
   let printed;
   const deps = {
+    readRequestJson,
     NextResponse: { json: (body, options = {}) => ({ body, status: options.status || 200 }) },
     prisma: {
       payment: { findUnique: async () => ({ id: "p1", idempotencyKey: "attempt" }) },

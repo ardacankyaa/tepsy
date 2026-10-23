@@ -2,6 +2,17 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { normalizeRestaurantLogoUrl } from "../src/lib/restaurant-logo.cjs";
+// Request doubles expose json(); real-stream size limits are covered in request-body tests.
+const readRequestJson = async (request) => {
+  try {
+    return await request.json();
+  } catch {
+    throw Object.assign(new Error("Invalid JSON request body."), {
+      code: "invalid-json-body",
+      status: 400,
+    });
+  }
+};
 const source = (await readFile(new URL("../src/app/api/config/route.js", import.meta.url), "utf8"))
   .replace(/^import[\s\S]*?from "[^"]+";\r?$/gm, "")
   .replace(/export /g, "");
@@ -21,6 +32,7 @@ function route(active) {
   };
   client.$transaction = (fn) => fn(client);
   const deps = {
+    readRequestJson,
     requireStaffRole: async () => ({ session: { userId: "owner", role: "ADMIN" } }),
     prisma: client,
     normalizeRestaurantLogoUrl,

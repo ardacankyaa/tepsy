@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
+import { readRequestJson } from "@/lib/request-json.mjs";
 import prisma from "@/lib/db";
 import { requireStaffRole } from "@/lib/route-access.mjs";
 import os from "os";
@@ -39,7 +40,7 @@ export async function PUT(request) {
   const access = await requireStaffRole(request, prisma, ["ADMIN"]);
   if (access.denied) return access.denied;
   try {
-    const body = await request.json();
+    const body = await readRequestJson(request);
     if (
       !body ||
       typeof body !== "object" ||
@@ -52,6 +53,11 @@ export async function PUT(request) {
     const config = await writeDeviceConfig({ ...existing, network: { qrBaseUrl: body.qrBaseUrl } });
     return NextResponse.json(networkInfo(config), { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
+    if (error?.code === "invalid-json-body")
+      return NextResponse.json(
+        { error: "Geçersiz veya çok büyük JSON isteği.", code: "invalid-json" },
+        { status: error.status }
+      );
     const invalid = error instanceof SyntaxError || !error?.code;
     return NextResponse.json(
       { error: invalid ? error.message : "QR ağ adresi kaydedilemedi." },

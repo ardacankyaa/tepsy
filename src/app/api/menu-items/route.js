@@ -1,10 +1,16 @@
 export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
+import { readRequestJson } from "@/lib/request-json.mjs";
 import prisma from "@/lib/db";
 import { requireStaffRole } from "@/lib/route-access.mjs";
 import { normalizeMenuInput } from "@/lib/menu-input.cjs";
 
 function writeErrorResponse(error, operation) {
+  if (error?.code === "invalid-json-body")
+    return NextResponse.json(
+      { error: "Geçersiz veya çok büyük JSON isteği.", code: "invalid-json" },
+      { status: error.status }
+    );
   if (error instanceof SyntaxError)
     return NextResponse.json({ error: "Geçersiz JSON isteği." }, { status: 400 });
   if (error?.status === 400) return NextResponse.json({ error: error.message }, { status: 400 });
@@ -66,7 +72,7 @@ export async function POST(request) {
   const access = await requireStaffRole(request, prisma, ["ADMIN"]);
   if (access.denied) return access.denied;
   try {
-    const body = await request.json();
+    const body = await readRequestJson(request);
     const data = normalizeMenuInput(body, false);
 
     const newItem = await prisma.menuItem.create({
@@ -90,7 +96,7 @@ export async function PUT(request) {
   const access = await requireStaffRole(request, prisma, ["ADMIN"]);
   if (access.denied) return access.denied;
   try {
-    const body = await request.json();
+    const body = await readRequestJson(request);
     if (
       !body ||
       typeof body !== "object" ||

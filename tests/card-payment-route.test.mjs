@@ -6,6 +6,17 @@ import * as paymentRequest from "../src/lib/payment-request.mjs";
 import * as shifts from "../src/lib/cash-shift.mjs";
 import * as idempotency from "../src/lib/payment-idempotency.mjs";
 import { assertCardPaymentAllowed } from "../src/lib/card-payment-policy.mjs";
+// Request doubles expose json(); real-stream size limits are covered in request-body tests.
+const readRequestJson = async (request) => {
+  try {
+    return await request.json();
+  } catch {
+    throw Object.assign(new Error("Invalid JSON request body."), {
+      code: "invalid-json-body",
+      status: 400,
+    });
+  }
+};
 
 // Exercise the actual route with injected persistence; never open a restaurant DB.
 const source = (
@@ -27,6 +38,7 @@ function makeRoute(terminal, attempt = null) {
     cashShift: { findUnique: rejectWrite },
   };
   const deps = {
+    readRequestJson,
     ...finance,
     ...paymentRequest,
     ...shifts,

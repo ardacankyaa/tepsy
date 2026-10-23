@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
+import { readRequestJson } from "@/lib/request-json.mjs";
 import { readDeviceConfig } from "@/lib/devices/config";
 import { deviceErrorResponse } from "@/lib/devices/http";
 import { printReceipt } from "@/lib/devices/printers";
@@ -14,7 +15,7 @@ import { PaymentRequestError } from "@/lib/payment-request.mjs";
 export async function POST(request) {
   try {
     await authorizePaymentAccess(request, prisma);
-    const body = await request.json();
+    const body = await readRequestJson(request, { maxBytes: 256 * 1024 });
     let receipt;
     if (body && Object.hasOwn(body, "paymentId")) {
       const snapshot = await readPaymentReceipt(prisma, body.paymentId);
@@ -28,6 +29,11 @@ export async function POST(request) {
     const result = await printReceipt(receipt, config.receiptPrinter);
     return NextResponse.json({ success: true, ...result });
   } catch (error) {
+    if (error?.code === "invalid-json-body")
+      return NextResponse.json(
+        { error: "Geçersiz veya çok büyük JSON isteği.", code: "invalid-json" },
+        { status: error.status }
+      );
     if (error instanceof PaymentRequestError)
       return NextResponse.json(
         { error: error.message, code: error.code },

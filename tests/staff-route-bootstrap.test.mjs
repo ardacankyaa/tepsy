@@ -3,6 +3,17 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { currentStaffSession } from "../src/lib/security-policy.cjs";
 import { normalizeStaffCreate, normalizeStaffUpdate } from "../src/lib/staff-input.cjs";
+// Request doubles expose json(); real-stream size limits are covered in request-body tests.
+const readRequestJson = async (request) => {
+  try {
+    return await request.json();
+  } catch {
+    throw Object.assign(new Error("Invalid JSON request body."), {
+      code: "invalid-json-body",
+      status: 400,
+    });
+  }
+};
 
 const source = (await readFile(new URL("../src/app/api/staff/route.js", import.meta.url), "utf8"))
   .replace(/^import[^\r\n]*;?\r?\n/gm, "")
@@ -76,6 +87,7 @@ function staffRoutes(actor, targetRole = "ADMIN") {
     "normalizeStaffUpdate",
     "hashCredential",
     "disconnectStaffSockets",
+    "readRequestJson",
     `${source}\nreturn {POST, PUT, DELETE};`
   )(
     NextResponse,
@@ -86,7 +98,8 @@ function staffRoutes(actor, targetRole = "ADMIN") {
     normalizeStaffCreate,
     normalizeStaffUpdate,
     () => "hashed-pin",
-    () => {}
+    () => {},
+    readRequestJson
   );
   return { routes, writes: () => writes };
 }

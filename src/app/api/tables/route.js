@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
+import { readRequestJson } from "@/lib/request-json.mjs";
 import prisma from "@/lib/db";
 import { requireStaffRole } from "@/lib/route-access.mjs";
 import {
@@ -73,7 +74,7 @@ export async function POST(req) {
   const access = await requireStaffRole(req, prisma, ["ADMIN"]);
   if (access.denied) return access.denied;
   try {
-    const body = normalizeTableInput(await req.json(), true);
+    const body = normalizeTableInput(await readRequestJson(req), true);
     const { tableNumber, capacity, section, posX, posY, shape, width, height } = body;
 
     if (!tableNumber) {
@@ -112,6 +113,11 @@ export async function POST(req) {
 
     return NextResponse.json(newTable, { status: 201 });
   } catch (error) {
+    if (error?.code === "invalid-json-body")
+      return NextResponse.json(
+        { error: "Geçersiz veya çok büyük JSON isteği.", code: "invalid-json" },
+        { status: error.status }
+      );
     if (error instanceof TableInputError)
       return NextResponse.json({ error: error.message }, { status: error.status });
     if (error?.code === "P2002")
@@ -127,7 +133,7 @@ export async function PUT(req) {
   const access = await requireStaffRole(req, prisma, ["ADMIN", "WAITER", "CASHIER"]);
   if (access.denied) return access.denied;
   try {
-    const body = normalizeTableInput(await req.json());
+    const body = normalizeTableInput(await readRequestJson(req));
     const role = access.session.role;
     if (!canUpdateTableFields(role, body))
       return NextResponse.json({ error: "Yetkisiz masa değişikliği." }, { status: 403 });
@@ -190,6 +196,11 @@ export async function PUT(req) {
 
     return NextResponse.json(updatedTable);
   } catch (error) {
+    if (error?.code === "invalid-json-body")
+      return NextResponse.json(
+        { error: "Geçersiz veya çok büyük JSON isteği.", code: "invalid-json" },
+        { status: error.status }
+      );
     if (error instanceof SyntaxError)
       return NextResponse.json({ error: "Geçersiz JSON isteği." }, { status: 400 });
     if (error instanceof TableInputError)

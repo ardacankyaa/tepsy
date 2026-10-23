@@ -1,13 +1,14 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
+import { readRequestJson } from "@/lib/request-json.mjs";
 import prisma from "@/lib/db";
 import { requireStaffRole } from "@/lib/route-access.mjs";
 import { validateTableLayoutPayload } from "@/lib/floorplan-data.cjs";
 
 async function handleLayoutUpdate(request) {
   try {
-    const body = await request.json();
+    const body = await readRequestJson(request, { maxBytes: 1024 * 1024 });
     const validation = validateTableLayoutPayload(body?.tables);
     if (validation.error) {
       return NextResponse.json({ error: "Geçersiz masa koordinat verisi" }, { status: 400 });
@@ -42,6 +43,11 @@ async function handleLayoutUpdate(request) {
 
     return NextResponse.json({ success: true, count: tables.length });
   } catch (error) {
+    if (error?.code === "invalid-json-body")
+      return NextResponse.json(
+        { error: "Geçersiz veya çok büyük JSON isteği.", code: "invalid-json" },
+        { status: error.status }
+      );
     if (error instanceof SyntaxError)
       return NextResponse.json({ error: "Geçersiz JSON isteği." }, { status: 400 });
     if (error?.code === "P2002")

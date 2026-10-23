@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
+import { readRequestJson } from "@/lib/request-json.mjs";
 import prisma from "@/lib/db";
 import { requireStaffRole } from "@/lib/route-access.mjs";
 import {
@@ -62,7 +63,7 @@ export async function PUT(request) {
   const access = await requireStaffRole(request, prisma, ["ADMIN"]);
   if (access.denied) return access.denied;
   try {
-    const body = await request.json();
+    const body = await readRequestJson(request);
     if (!body || typeof body !== "object" || Array.isArray(body))
       return NextResponse.json({ error: "Ayar bilgileri geçersiz." }, { status: 400 });
     const {
@@ -197,6 +198,11 @@ export async function PUT(request) {
       currencyLocked: await currencyLocked(prisma),
     });
   } catch (error) {
+    if (error?.code === "invalid-json-body")
+      return NextResponse.json(
+        { error: "Geçersiz veya çok büyük JSON isteği.", code: "invalid-json" },
+        { status: error.status }
+      );
     if ([400, 409].includes(error?.status))
       return NextResponse.json(
         { error: error.message, code: error.status === 409 ? "currency-locked" : "invalid-config" },

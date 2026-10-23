@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
+import { readRequestJson } from "@/lib/request-json.mjs";
 import prisma from "@/lib/db";
 import { requireStaffRole } from "@/lib/route-access.mjs";
 
@@ -10,9 +11,9 @@ export async function POST(request) {
   if (access.denied) return access.denied;
   let body;
   try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Geçersiz JSON isteği." }, { status: 400 });
+    body = await readRequestJson(request);
+  } catch (error) {
+    return NextResponse.json({ error: "Geçersiz JSON isteği." }, { status: error?.status || 400 });
   }
   if (
     !body ||

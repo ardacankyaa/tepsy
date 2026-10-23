@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
+import { readRequestJson } from "@/lib/request-json.mjs";
 import prisma from "@/lib/db";
 import { requireStaffRole } from "@/lib/route-access.mjs";
 import { preferOrderItemNameSnapshots } from "@/lib/order-idempotency-server.mjs";
@@ -37,11 +38,11 @@ export async function PATCH(request) {
   try {
     let body;
     try {
-      body = await request.json();
-    } catch {
+      body = await readRequestJson(request);
+    } catch (error) {
       return NextResponse.json(
         { error: "Geçersiz JSON isteği.", code: "invalid-json" },
-        { status: 400 }
+        { status: error?.status || 400 }
       );
     }
     const { id, action } = body || {};

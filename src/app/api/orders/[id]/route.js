@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
+import { readRequestJson } from "@/lib/request-json.mjs";
 import prisma from "@/lib/db";
 import { recordAudit } from "@/lib/audit.mjs";
 import { sessionFromRequest } from "@/lib/auth-local";
@@ -85,9 +86,12 @@ export async function PATCH(request, { params }) {
   try {
     let body;
     try {
-      body = await request.json();
-    } catch {
-      return NextResponse.json({ error: "Geçersiz JSON isteği." }, { status: 400 });
+      body = await readRequestJson(request);
+    } catch (error) {
+      return NextResponse.json(
+        { error: "Geçersiz veya çok büyük JSON isteği." },
+        { status: error?.status || 400 }
+      );
     }
     const { id } = await params;
 
