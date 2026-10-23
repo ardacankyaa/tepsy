@@ -27,6 +27,7 @@ prisma/dev.db
 
 # Development tools
 .agents/
+.claude/
 .codex/
 .codex-backups/
 .playwright-cli/
