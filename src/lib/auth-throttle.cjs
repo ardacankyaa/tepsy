@@ -1,3 +1,5 @@
+const { trustedClientAddress } = require("./trusted-client.cjs");
+
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const LOGIN_MAX_ATTEMPTS = 8;
 const MAX_CLIENTS = 8192;
@@ -16,12 +18,8 @@ function createAuthenticationThrottle({
       }
       lastSweep = timestamp;
     }
-    // server.js replaces these headers with the actual TCP peer before handing the request to Next.
-    const key = String(
-      request.headers.get("x-tepsy-client-ip") ||
-        request.headers.get("x-restopos-client-ip") ||
-        "unknown"
-    );
+    // Only the peer address stamped by server.js counts; anything else shares one quota.
+    const key = trustedClientAddress(request) || "unknown";
     let state = states.get(key);
     if (!state || state.resetAt <= timestamp) {
       if (states.size >= maxClients) return { allowed: false, retryAfter: 60 };

@@ -3,12 +3,13 @@ export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { canAccessInitialSetup, canRunSetup } from "@/lib/setup-policy.cjs";
+import { trustedClientAddress } from "@/lib/trusted-client.cjs";
 import { readImageRequest, storeMenuImage } from "@/lib/menu-images.cjs";
 
 export async function POST(request) {
   try {
     // The custom server overwrites this header with the actual socket address.
-    if (!canAccessInitialSetup(null, request.headers.get("x-tepsy-client-ip")))
+    if (!canAccessInitialSetup(null, trustedClientAddress(request)))
       return NextResponse.json(
         { error: "Kurulum sunucu bilgisayarında yapılmalıdır." },
         { status: 403 }

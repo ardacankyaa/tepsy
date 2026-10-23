@@ -12,6 +12,7 @@ import {
   invalidateAuthConfigCache,
 } from "@/lib/security-policy.cjs";
 import { isLoopbackAddress } from "@/lib/setup-policy.cjs";
+import { trustedClientAddress } from "@/lib/trusted-client.cjs";
 import runtimeConfig from "../../../../scripts/runtime-config.cjs";
 
 const runFile = promisify(execFile);
@@ -39,7 +40,7 @@ async function createVerifiedResetBackup() {
 
 export async function POST(request) {
   try {
-    if (!isLoopbackAddress(request.headers.get("x-tepsy-client-ip"))) {
+    if (!isLoopbackAddress(trustedClientAddress(request))) {
       return NextResponse.json(
         { error: "Sıfırlama yalnızca TEPSY sunucusunun çalıştığı bilgisayardan yapılabilir." },
         { status: 403 }

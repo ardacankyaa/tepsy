@@ -4,6 +4,7 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const recovery = require("../src/lib/owner-recovery.cjs");
+const trusted = require("../src/lib/trusted-client.cjs");
 
 function fixture(t) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "tepsy-recovery-"));
@@ -161,6 +162,7 @@ test("recovery requires the actual loopback peer, and its independent shared quo
   const request = (peer) => ({
     headers: new Headers({
       "x-tepsy-client-ip": peer,
+      [trusted.PROOF_HEADER]: trusted.installTrustedClientProof(),
       "x-forwarded-for": "127.0.0.1",
       origin: "http://localhost:3000",
     }),
@@ -230,7 +232,10 @@ function routeFixture(root) {
     ...Object.values(dependencies)
   );
   const request = (body, peer = "127.0.0.1") => ({
-    headers: new Headers({ "x-tepsy-client-ip": peer }),
+    headers: new Headers({
+      "x-tepsy-client-ip": peer,
+      [trusted.PROOF_HEADER]: trusted.installTrustedClientProof(),
+    }),
     json: async () => body,
   });
   return { state, post: (body, peer) => handler(request(body, peer)) };

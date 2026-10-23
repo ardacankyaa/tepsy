@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import trusted from "../src/lib/trusted-client.cjs";
+
+const proof = trusted.installTrustedClientProof();
 
 async function route(name, dependencies) {
   const source = (
@@ -17,7 +20,7 @@ function request(body, ip = "192.168.20.44") {
   return {
     json: async () => body,
     cookies: { get: () => null },
-    headers: { get: (key) => (key === "x-tepsy-client-ip" ? ip : null) },
+    headers: new Headers({ "x-tepsy-client-ip": ip, [trusted.PROOF_HEADER]: proof }),
   };
 }
 
@@ -73,6 +76,7 @@ async function routes(quota) {
     invalidateAuthConfigCache: () => {},
     reserveAuthenticationAttempt: quota,
     readAuthenticationBody: (req) => req.json(),
+    trustedClientAddress: trusted.trustedClientAddress,
     globalThis: {},
   };
   return {

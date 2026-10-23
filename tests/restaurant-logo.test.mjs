@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import logo from "../src/lib/restaurant-logo.cjs";
 import setupPolicy from "../src/lib/setup-policy.cjs";
+import trusted from "../src/lib/trusted-client.cjs";
 const imageUrl = "/api/public/menu-images/" + "a".repeat(64) + ".webp";
 const json = (body, options = {}) => ({ body, status: options.status || 200 });
 async function route(name, dependencies) {
@@ -108,6 +109,7 @@ test("setup logo upload is permitted only on empty local installation", async ()
     },
     canAccessInitialSetup: setupPolicy.canAccessInitialSetup,
     canRunSetup: setupPolicy.canRunSetup,
+    trustedClientAddress: trusted.trustedClientAddress,
     readImageRequest: async () => {
       read++;
       return { bytes: Buffer.from("sanitized fixture"), type: "image/png" };
@@ -117,8 +119,16 @@ test("setup logo upload is permitted only on empty local installation", async ()
       return { imageUrl };
     },
   });
-  const upload = (ip) => api.POST({ headers: new Headers(ip ? { "x-tepsy-client-ip": ip } : {}) });
+  const proof = trusted.installTrustedClientProof();
+  const upload = (ip, headerProof = proof) =>
+    api.POST({
+      headers: new Headers(
+        ip ? { "x-tepsy-client-ip": ip, [trusted.PROOF_HEADER]: headerProof } : {}
+      ),
+    });
   for (const ip of [null, "192.168.1.22"]) assert.equal((await upload(ip)).status, 403);
+  // A loopback address without this process's proof was not stamped by server.js.
+  assert.equal((await upload("127.0.0.1", "forged")).status, 403);
   assert.equal(stored, 0);
   assert.equal(read, 0);
   assert.equal((await upload("127.0.0.1")).status, 201);

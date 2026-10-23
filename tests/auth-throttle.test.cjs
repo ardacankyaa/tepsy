@@ -1,8 +1,11 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { createAuthenticationThrottle } = require("../src/lib/auth-throttle.cjs");
+const trusted = require("../src/lib/trusted-client.cjs");
+const proof = trusted.installTrustedClientProof();
+const headers = (values) => ({ get: (key) => values[key] ?? null });
 const request = (ip = "192.168.1.22") => ({
-  headers: { get: (key) => (key === "x-tepsy-client-ip" ? ip : null) },
+  headers: headers({ "x-tepsy-client-ip": ip, [trusted.PROOF_HEADER]: proof }),
 });
 
 test("eight simultaneous reservations consume quota before asynchronous verification and expire after fifteen minutes", () => {
@@ -48,7 +51,9 @@ test("legacy attempt state is reused and legacy peer header remains compatible",
   const states = new Map([["peer", { count: 8, resetAt: 1000000 }]]);
   const reserve = createAuthenticationThrottle({ states, now: () => 100000 });
   assert.deepEqual(
-    reserve({ headers: { get: (key) => (key === "x-restopos-client-ip" ? "peer" : null) } }),
+    reserve({
+      headers: headers({ "x-restopos-client-ip": "peer", [trusted.PROOF_HEADER]: proof }),
+    }),
     { allowed: false, retryAfter: 900 }
   );
   assert.equal(globalThis.__tepsyLoginAttempts, globalThis.__restoposLoginAttempts);

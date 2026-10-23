@@ -43,6 +43,10 @@ const { isAllowedRequestHost } = require("./src/lib/request-host.cjs");
 const { sessionTokenKey } = require("./src/lib/session-revocation.cjs");
 const { verifySessionToken: verifyLocalSession } = require("./src/lib/session-token.cjs");
 const { canonicalRequestPath, policyRequestPath } = require("./src/lib/request-path.cjs");
+const {
+  installTrustedClientProof,
+  stampTrustedClientAddress,
+} = require("./src/lib/trusted-client.cjs");
 
 const localStateDirectory = path.join(process.cwd(), ".tepsy");
 fs.mkdirSync(localStateDirectory, { recursive: true });
@@ -168,6 +172,7 @@ process.on("SIGTERM", () => {
 });
 
 async function startServer() {
+  installTrustedClientProof();
   await prepareDatabase();
   await app.prepare();
   if (shutdownPromise) return;
@@ -211,8 +216,8 @@ async function startServer() {
       const requestUrl = new URL(req.url, `http://localhost:${port}`);
       // Older browsers may request this URL before streamed metadata arrives.
       if (pathname === "/favicon.ico") req.url = "/icon.png";
-      req.headers["x-tepsy-client-ip"] = req.socket.remoteAddress || "";
-      req.headers["x-restopos-client-ip"] = req.headers["x-tepsy-client-ip"];
+      // Drop client-supplied copies and record the actual TCP peer with this process's proof.
+      stampTrustedClientAddress(req.headers, req.socket.remoteAddress);
       const isMutation = !["GET", "HEAD", "OPTIONS"].includes(req.method);
       if (isMutation && !hasTrustedOrigin(req)) {
         res.statusCode = 403;

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { sessionFromRequest, credentialSessionVersion, verifyCredential } from "@/lib/auth-local";
 import { isLoopbackAddress } from "@/lib/setup-policy.cjs";
+import { trustedClientAddress } from "@/lib/trusted-client.cjs";
 import { reserveAuthenticationAttempt } from "@/lib/auth-throttle.cjs";
 import { readAuthenticationBody } from "@/lib/authentication-body.mjs";
 import installations from "@/lib/restaurant-installations.cjs";
@@ -11,10 +12,7 @@ function response(body, status = 200, headers = {}) {
   return NextResponse.json(body, { status, headers: { "Cache-Control": "no-store", ...headers } });
 }
 function localOnly(request) {
-  return (
-    process.env.TEPSY_DEMO_MODE !== "1" &&
-    isLoopbackAddress(request.headers.get("x-tepsy-client-ip"))
-  );
+  return process.env.TEPSY_DEMO_MODE !== "1" && isLoopbackAddress(trustedClientAddress(request));
 }
 export async function GET(request) {
   if (!localOnly(request))

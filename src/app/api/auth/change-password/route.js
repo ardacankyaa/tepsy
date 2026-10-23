@@ -21,6 +21,7 @@ import {
 
 import { reserveAuthenticationAttempt } from "@/lib/auth-throttle.cjs";
 import { readAuthenticationBody } from "@/lib/authentication-body.mjs";
+import { trustedClientAddress } from "@/lib/trusted-client.cjs";
 
 export async function POST(request) {
   try {
@@ -45,9 +46,7 @@ export async function POST(request) {
     if (!config) return NextResponse.json({ error: "Restoran ayarı bulunamadı." }, { status: 404 });
     const signedSession = sessionFromRequest(request);
     const canBootstrap = canBootstrapPasswordChange(config);
-    const clientIp = String(
-      request.headers.get("x-tepsy-client-ip") || request.headers.get("x-restopos-client-ip") || ""
-    );
+    const clientIp = trustedClientAddress(request);
     const isLoopback =
       clientIp === "::1" || clientIp === "127.0.0.1" || clientIp === "::ffff:127.0.0.1";
     if (canBootstrap && !isLoopback) {

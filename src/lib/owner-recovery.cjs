@@ -2,6 +2,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { createHash, randomBytes, timingSafeEqual } = require("node:crypto");
 const { resolveStateFile } = require("../../scripts/runtime-config.cjs");
+const { trustedClientAddress } = require("./trusted-client.cjs");
 
 const CODE_LIFETIME_MS = 10 * 60 * 1000;
 const digest = (purpose, value) =>
@@ -86,9 +87,7 @@ async function consumeRecoveryCode({
   }
 }
 function isLocalRecoveryRequest(request) {
-  const peer =
-    request.headers.get("x-tepsy-client-ip") || request.headers.get("x-restopos-client-ip");
-  return ["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(peer);
+  return ["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(trustedClientAddress(request));
 }
 function createRecoveryThrottle({ state = {}, now = Date.now } = {}) {
   return () => {

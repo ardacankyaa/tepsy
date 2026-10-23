@@ -9,13 +9,11 @@ import prisma from "@/lib/db";
 import { authorizePaymentAccess } from "@/lib/payment-access.mjs";
 import { recordAudit } from "@/lib/audit.mjs";
 import { isLoopbackAddress } from "@/lib/setup-policy.cjs";
+import { trustedClientAddress } from "@/lib/trusted-client.cjs";
 import recovery from "@/lib/recovery.cjs";
 async function owner(request) {
   const session = await authorizePaymentAccess(request, prisma);
-  if (
-    !isLoopbackAddress(request.headers.get("x-tepsy-client-ip")) ||
-    (session && session.userId !== "owner")
-  )
+  if (!isLoopbackAddress(trustedClientAddress(request)) || (session && session.userId !== "owner"))
     return NextResponse.json(
       { error: "Tam yedek yönetimi sunucu bilgisayarında işletme sahibine açıktır." },
       { status: 403 }

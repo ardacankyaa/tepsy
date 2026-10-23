@@ -116,6 +116,10 @@ percent-encoded, case-changed and trailing-slash spellings. Encoded separators,
 dot segments and malformed escapes must be refused. A new route file fails the
 test until it is listed.
 
+`trusted-client.test.cjs` checks that client address headers are ignored without
+the server's per-process proof, that stamping replaces client-supplied copies and
+that forged addresses share one login quota.
+
 `socket-authorization-race.test.cjs` covers a staff access change or owner password
 change while a Socket.IO handshake is pending, including the interval before
 registration and initial local bootstrap. Independent API/host module copies must

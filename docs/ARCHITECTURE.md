@@ -31,6 +31,11 @@ The gateway evaluates roles on the decoded request path that Next.js routes
 (`src/lib/request-path.cjs`). Paths with malformed escapes, encoded `/` or ``,
 dot segments or repeated slashes are refused with 400.
 
+`server.js` replaces client-supplied `x-tepsy-client-ip` / `x-restopos-client-ip`
+headers with the TCP peer and a random per-process proof. Throttling, owner
+recovery and local-only routes trust the address only with that proof
+(`src/lib/trusted-client.cjs`); without it they treat the client as remote.
+
 ## Order Flow
 
 Staff orders enter `PENDING`. QR orders enter `AWAITING_WAITER_APPROVAL` first. Preparation: `PREPARING` → `READY` → `DELIVERED` → `PAID`. The server validates quantities, availability and current prices.

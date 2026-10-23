@@ -5,6 +5,7 @@ import prisma from "@/lib/db";
 import { credentialSessionVersion, sessionFromRequest } from "@/lib/auth-local";
 import { currentStaffSession } from "@/lib/security-policy.cjs";
 import { canRunSetup, isLoopbackAddress } from "@/lib/setup-policy.cjs";
+import { trustedClientAddress } from "@/lib/trusted-client.cjs";
 
 export async function GET(request) {
   try {
@@ -59,14 +60,14 @@ export async function GET(request) {
       isSetupCompleted: Boolean(config?.isSetupCompleted),
       canSetup,
       canRecoverOwner: Boolean(
-        config?.accessPasswordHash && isLoopbackAddress(request.headers.get("x-tepsy-client-ip"))
+        config?.accessPasswordHash && isLoopbackAddress(trustedClientAddress(request))
       ),
       canCreateRestaurant: Boolean(
         config?.accessPasswordHash &&
         config?.isSetupCompleted &&
         config?.authEnabled &&
         process.env.TEPSY_DEMO_MODE !== "1" &&
-        isLoopbackAddress(request.headers.get("x-tepsy-client-ip"))
+        isLoopbackAddress(trustedClientAddress(request))
       ),
       session,
     });
