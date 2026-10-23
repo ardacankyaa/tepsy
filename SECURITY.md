@@ -8,7 +8,7 @@ installation; restaurant data and settings are retained.
 
 | Version | Supported |
 | ------- | --------- |
-| 1.0.x   | Yes       |
+| 1.1.x   | Yes       |
 
 ## Reporting a vulnerability
 

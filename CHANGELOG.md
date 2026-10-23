@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.1.1 — October 2026
+
+- Security: role checks now evaluate the same decoded request path that Next.js routes. Previously an alternative spelling of a restricted address could let a signed-in staff member of any role reach administrator-only pages and APIs, such as backups, activity history, device settings, staff and reports. Paths with malformed escapes, encoded separators, dot segments or repeated slashes are refused, and every role-restricted API handler now verifies the session role itself. Update existing installations promptly.
+- The client address used for login throttling, owner recovery and server-computer-only actions is trusted only when the server recorded it with a per-process proof; copies sent by clients are discarded.
+- Login spends the same hashing work for unknown staff names and restaurant codes, so response time no longer reveals valid names. An account is locked after ten failed guesses from any number of devices, with backoff from one to fifteen minutes; owner password changes share the owner lockout.
+- QR tips cannot exceed the order total or 10,000.00, and checkout tips cannot take an account's collected tips above its bill.
+- Every API request body is read with a size limit (32 KiB by default; larger for orders, payments, receipts, floor layouts and setup). Oversized or stalled bodies are refused before database work.
+- CI actions are pinned to commit SHAs; Dependabot proposes weekly GitHub Actions and npm updates.
+- Operations documentation explains how new databases are created from the schema, how existing ones are upgraded, and why Prisma Migrate is not used on restaurant data.
+- Updated Next.js 16.4.3, ESLint 10.13, Playwright 1.64.1, PostCSS 8.5.31 and globals 17. Socket.IO ranges now require 4.8.4. The security policy lists 1.1.x as supported.
+
 ## 1.1.0 — October 2026
 
 - Upgraded to Next.js 16.4 (Turbopack builds), React 19.3, Prisma 7.10 and lucide-react 1.61. `@next/eslint-plugin-next` now matches Next 16; its vulnerable `braces` chain is replaced through an npm override.
