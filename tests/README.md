@@ -169,7 +169,10 @@ copy. All records live in the integration runner's disposable installation.
 cover the corresponding business rules. Python `test_recovery.py` checks the
 archive inventory and actual restored data, missing/corrupt payloads, path traversal
 and refusal to overwrite existing installations. Migration tests preserve legacy
-order and shift records while adding refund/audit tables and closing snapshots.
+order and shift records while adding refund/audit tables and closing snapshots. A
+database built from the 1.0.0 schema fixture (`tests/fixtures/tepsy-1.0.0-schema.sql`)
+without `FloorPlanSection` gains that table exactly as in `schema.prisma`, and the
+floor plan canvas's Prisma queries run against the upgraded file.
 
 `npm run test:managed` creates a fresh demo installation under a disposable `.tepsy/qa/managed-demo-*` directory. It verifies dependency installation, schema and seed, production build/start, owner/staff login, demo cookie isolation for HTTP and Socket.IO, guest QR access, restart without reseeding or rebuilding, retained owner session and owned process shutdown. It also checks a fresh real installation with the default database after relocating the build: no demo data and a working login/setup entry. Logs and `results.json` stay in that QA directory. CI runs this check on Windows and Ubuntu.
 

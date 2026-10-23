@@ -8,6 +8,7 @@
 - QR tips cannot exceed the order total or 10,000.00, and checkout tips cannot take an account's collected tips above its bill.
 - Every API request body is read with a size limit (32 KiB by default; larger for orders, payments, receipts, floor layouts and setup). Oversized or stalled bodies are refused before database work.
 - CI actions are pinned to commit SHAs; Dependabot proposes weekly GitHub Actions and npm updates.
+- Upgrading a database from before per-section floor plan dimensions now creates the missing `FloorPlanSection` table; previously the floor plan canvas could not load or save on such installations.
 - Operations documentation explains how new databases are created from the schema, how existing ones are upgraded, and why Prisma Migrate is not used on restaurant data.
 - Updated Next.js 16.4.3, ESLint 10.13, Playwright 1.64.1, PostCSS 8.5.31 and globals 17. Socket.IO ranges now require 4.8.4. The security policy lists 1.1.x as supported.
 

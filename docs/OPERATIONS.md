@@ -152,7 +152,8 @@ schema source, and installations have no `_prisma_migrations` history table:
   applies additive changes (new tables, columns and indexes) in place.
 - `prisma/migrations/` contains a single historical, idempotent SQL file
   (`20260925130000_add_floor_plan_section`). It is not a baseline and no TEPSY
-  command applies it.
+  command applies it; `migrate-tepsy.py` creates the same table in databases that
+  predate it.
 
 Never run `prisma migrate deploy`, `migrate dev`, `migrate reset` or
 `migrate resolve` against restaurant data. Without a migration history Prisma

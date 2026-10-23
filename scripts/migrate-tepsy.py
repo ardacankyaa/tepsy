@@ -1,4 +1,4 @@
-"""Add order replay keys and historical item snapshots without rebuilding business tables.
+"""Add order replay keys, historical item snapshots and missing tables without rebuilding business tables.
 
 Stop the application before upgrading. A verified pre-upgrade SQLite backup is
 mandatory and created automatically. Existing IDs, totals and relations stay intact.
@@ -34,6 +34,13 @@ CREATE TABLE IF NOT EXISTS "AuditEvent" (
 );
 CREATE INDEX IF NOT EXISTS "AuditEvent_createdAt_id_idx" ON "AuditEvent"("createdAt", "id");
 CREATE INDEX IF NOT EXISTS "AuditEvent_entityId_idx" ON "AuditEvent"("entityId");
+CREATE TABLE IF NOT EXISTS "FloorPlanSection" (
+  "section" TEXT NOT NULL PRIMARY KEY,
+  "width" INTEGER NOT NULL DEFAULT 720,
+  "height" INTEGER NOT NULL DEFAULT 450,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" DATETIME NOT NULL
+);
 '''
 
 
@@ -46,6 +53,9 @@ def needs_upgrade(database):
         raise FileNotFoundError(f"Database missing: {database}. Run SETUP.bat first.")
     with closing(sqlite3.connect(database.resolve().as_uri() + "?mode=ro", uri=True)) as connection:
         if not columns(connection, "Refund") or not columns(connection, "AuditEvent"):
+            return True
+        # Databases from before per-section floor plan dimensions lack this table.
+        if not columns(connection, "FloorPlanSection"):
             return True
         shift_columns = columns(connection, "CashShift")
         for table, fields in PAYMENT_ADDITIONS.items():
