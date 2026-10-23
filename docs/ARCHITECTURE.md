@@ -12,7 +12,7 @@ The private revocation store survives server restarts; it contains no raw cookie
 Include this state in recovery procedures, or rotate the session signing secret to
 invalidate previous cookies when recovering without it.
 
-One installation serves one restaurant. SQLite uses WAL and `synchronous=FULL` on local disk. Prisma covers tables, menu, orders, payments, shifts, staff and settings. Finance calculations use integer minor units.
+One installation serves one restaurant. SQLite uses WAL and `synchronous=FULL` on local disk. The schema comes from `prisma/schema.prisma`; new databases are created from it and existing ones are upgraded additively by `scripts/migrate-tepsy.py`, not by Prisma Migrate (see [Schema baseline](OPERATIONS.md#schema-baseline-and-prismamigrations)). Prisma covers tables, menu, orders, payments, shifts, staff and settings. Finance calculations use integer minor units.
 
 ## Screens
 

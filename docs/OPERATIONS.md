@@ -139,6 +139,31 @@ npm run build && npm start
 
 Never use `db:push`, and especially not `--accept-data-loss`, on restaurant data.
 
+### Schema baseline and `prisma/migrations`
+
+TEPSY does not use Prisma Migrate. [schema.prisma](../prisma/schema.prisma) is the
+schema source, and installations have no `_prisma_migrations` history table:
+
+- **New databases**: `initialize-sqlite.py` creates an empty file, then the launcher
+  applies `prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script`
+  with `prisma db execute` before publishing the file. Development databases use
+  `db:push` on a new file instead.
+- **Existing databases**: `scripts/migrate-tepsy.py` makes a verified backup and
+  applies additive changes (new tables, columns and indexes) in place.
+- `prisma/migrations/` contains a single historical, idempotent SQL file
+  (`20260925130000_add_floor_plan_section`). It is not a baseline and no TEPSY
+  command applies it.
+
+Never run `prisma migrate deploy`, `migrate dev`, `migrate reset` or
+`migrate resolve` against restaurant data. Without a migration history Prisma
+refuses a non-empty database (P3005) or proposes resetting it. A baseline migration
+is intentionally not added: every existing installation would first have to be
+marked as baselined, and a mistake there would drop data.
+
+To change the schema, edit `schema.prisma`, add the matching additive upgrade to
+`migrate-tepsy.py` with a regression in `tests/test_migration.py`, and verify fresh
+installation with `npm run test:managed`.
+
 ## Backup & Recovery
 
 ```sh
