@@ -19,7 +19,7 @@ import {
   invalidateAuthConfigCache,
 } from "@/lib/security-policy.cjs";
 
-import { reserveAuthenticationAttempt } from "@/lib/auth-throttle.cjs";
+import { reserveAccountAttempt, reserveAuthenticationAttempt } from "@/lib/auth-throttle.cjs";
 import { readAuthenticationBody } from "@/lib/authentication-body.mjs";
 import { trustedClientAddress } from "@/lib/trusted-client.cjs";
 
@@ -56,10 +56,13 @@ export async function POST(request) {
       );
     }
     const attempt = canBootstrap ? null : reserveAuthenticationAttempt(request);
-    if (attempt && !attempt.allowed) {
+    // Owner password guesses here count against the same owner lockout as login.
+    const account = attempt?.allowed ? reserveAccountAttempt("owner") : attempt;
+    if (attempt && (!attempt.allowed || !account.allowed)) {
+      const retryAfter = attempt.allowed ? account.retryAfter : attempt.retryAfter;
       return NextResponse.json(
         { error: "Çok fazla başarısız deneme. Bir süre sonra tekrar deneyin." },
-        { status: 429, headers: { "Retry-After": String(attempt.retryAfter) } }
+        { status: 429, headers: { "Retry-After": String(retryAfter) } }
       );
     }
     const session = await currentStaffSession(
@@ -88,6 +91,7 @@ export async function POST(request) {
         { status: 409 }
       );
     attempt?.complete(true);
+    account?.complete(true);
     invalidateAuthConfigCache();
     disconnectAllSockets(global.io);
     const identity = {

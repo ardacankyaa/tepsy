@@ -118,6 +118,12 @@ test until it is listed. Each role-restricted handler must also check the sessio
 role itself and admit no role beyond the gateway's; `route-access.test.mjs`
 exercises that check with real signed sessions.
 
+`auth-throttle.test.cjs` and `auth-throttle-routes.test.mjs` also cover the
+per-account lockout: ten guesses from any number of addresses lock a staff name or
+the owner (login and password change share it) with backoff from one to fifteen
+minutes, unknown names behave identically, and every login outcome spends exactly
+one credential hash.
+
 `trusted-client.test.cjs` checks that client address headers are ignored without
 the server's per-process proof, that stamping replaces client-supplied copies and
 that forged addresses share one login quota.

@@ -43,8 +43,10 @@ TEPSY is designed for a trusted local network:
 - Signed, expiring session cookies with server-side revocation on logout, staff
   access changes and owner password changes, applied to HTTP and Socket.IO.
 - Role-based access for owner, administrator, waiter, kitchen and cashier routes.
-- Login and recovery throttling, bounded request bodies, and host/origin checks
-  for state-changing requests.
+- Login and recovery throttling per client address, a per-account lockout with
+  increasing backoff for staff PINs and the owner password, equal hashing work
+  for unknown accounts, bounded request bodies, and host/origin checks for
+  state-changing requests.
 - Server-authoritative prices, replay-protected orders and payments, and
   historical item snapshots on orders and receipts.
 - Unguessable per-table QR tokens; QR orders require waiter approval.

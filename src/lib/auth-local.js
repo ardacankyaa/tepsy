@@ -53,6 +53,16 @@ export function verifyCredential(value, storedHash) {
   }
 }
 
+let unknownCredentialHash;
+
+// Spend the same scrypt work as a real verification when the account or restaurant
+// code does not exist, so response time does not reveal which names are valid.
+export function rejectUnknownCredential(value) {
+  unknownCredentialHash ||= hashCredential(randomBytes(18).toString("base64url"));
+  verifyCredential(value, unknownCredentialHash);
+  return false;
+}
+
 export function createSessionToken({
   userId,
   name,

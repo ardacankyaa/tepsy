@@ -9,11 +9,16 @@ import {
   createSessionToken,
   credentialSessionVersion,
   normalizeRestaurantCode,
+  rejectUnknownCredential,
   roleHome,
   verifyCredential,
 } from "@/lib/auth-local";
 
-import { reserveAuthenticationAttempt } from "@/lib/auth-throttle.cjs";
+import {
+  loginAccountKey,
+  reserveAccountAttempt,
+  reserveAuthenticationAttempt,
+} from "@/lib/auth-throttle.cjs";
 import { readAuthenticationBody } from "@/lib/authentication-body.mjs";
 
 export async function POST(request) {
@@ -34,8 +39,9 @@ export async function POST(request) {
     const credential = String(body.password || body.pin || "");
     const username = String(body.username || "").trim();
     const attempt = reserveAuthenticationAttempt(request);
-    if (!attempt.allowed) {
-      const retryAfter = attempt.retryAfter;
+    const account = attempt.allowed ? reserveAccountAttempt(loginAccountKey(username)) : attempt;
+    if (!attempt.allowed || !account.allowed) {
+      const retryAfter = attempt.allowed ? account.retryAfter : attempt.retryAfter;
       return NextResponse.json(
         { error: "Çok fazla başarısız deneme. Bir süre sonra tekrar deneyin." },
         {
@@ -53,19 +59,27 @@ export async function POST(request) {
       );
     }
     if (restaurantCode !== config.restaurantCode) {
+      rejectUnknownCredential(credential);
       return NextResponse.json({ error: "Giriş bilgileri hatalı." }, { status: 401 });
     }
 
+    // Every outcome performs at least one full credential hash, so timing does not
+    // reveal whether a staff name exists.
     let identity = null;
-    if (!username && verifyCredential(credential, config.accessPasswordHash)) {
-      identity = { userId: "owner", name: config.ownerName || "İşletme Sahibi", role: "ADMIN" };
-    } else if (username) {
+    if (!username) {
+      if (verifyCredential(credential, config.accessPasswordHash))
+        identity = { userId: "owner", name: config.ownerName || "İşletme Sahibi", role: "ADMIN" };
+    } else {
       const users = await prisma.staffUser.findMany({ where: { isActive: true } });
-      const user = users.find(
+      const candidates = users.filter(
         (candidate) =>
-          candidate.name.toLocaleLowerCase("tr-TR") === username.toLocaleLowerCase("tr-TR") &&
-          verifyCredential(credential, candidate.pinHash)
+          candidate.name.toLocaleLowerCase("tr-TR") === username.toLocaleLowerCase("tr-TR")
       );
+      if (!candidates.length) rejectUnknownCredential(credential);
+      let user = null;
+      for (const candidate of candidates) {
+        if (verifyCredential(credential, candidate.pinHash) && !user) user = candidate;
+      }
       if (user) identity = { userId: user.id, name: user.name, role: user.role };
     }
 
@@ -74,6 +88,7 @@ export async function POST(request) {
     }
 
     attempt.complete(true);
+    account.complete(true);
     const rememberDevice = identity.userId === "owner" && body.rememberDevice === true;
 
     const response = NextResponse.json({

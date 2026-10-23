@@ -72,3 +72,49 @@ test("valid staff logins cannot erase failures from attempts against another cre
     "Successful staff login must not reset the failed-password quota"
   );
 });
+
+test("account lockout counts concurrent guesses, backs off and treats unknown names alike", () => {
+  const {
+    createAccountLockout,
+    loginAccountKey,
+    ACCOUNT_MAX_FAILURES,
+  } = require("../src/lib/auth-throttle.cjs");
+  let time = 100000;
+  const reserve = createAccountLockout({ now: () => time });
+  assert.equal(ACCOUNT_MAX_FAILURES, 10);
+  assert.equal(loginAccountKey("  ALİ "), loginAccountKey("ali"));
+  assert.equal(loginAccountKey(""), "owner");
+  for (const account of ["staff:ali", "staff:nobody"]) {
+    const pending = Array.from({ length: 10 }, () => reserve(account));
+    assert.ok(
+      pending.every((entry) => entry.allowed),
+      "reservations happen before verification"
+    );
+    assert.deepEqual(reserve(account), { allowed: false, retryAfter: 60 });
+  }
+  const lockouts = [];
+  for (let round = 0; round < 6; round++) {
+    const blocked = reserve("staff:ali");
+    time += blocked.retryAfter * 1000;
+    assert.equal(reserve("staff:ali").allowed, true);
+    lockouts.push(reserve("staff:ali").retryAfter);
+  }
+  assert.deepEqual(lockouts, [120, 240, 480, 900, 900, 900]);
+  time += 900_000;
+  const success = reserve("staff:ali");
+  success.complete(true);
+  assert.equal(reserve("staff:ali").allowed, true, "a success clears earlier failures");
+  time += 24 * 60 * 60 * 1000;
+  for (let index = 0; index < 9; index++) reserve("staff:nobody");
+  assert.equal(reserve("staff:nobody").allowed, true, "failures are forgotten after a day");
+});
+
+test("account tracking capacity never evicts an active lockout", () => {
+  const { createAccountLockout } = require("../src/lib/auth-throttle.cjs");
+  const states = new Map();
+  const reserve = createAccountLockout({ states, maxAccounts: 2, now: () => 100000 });
+  reserve("staff:a");
+  reserve("staff:b");
+  assert.deepEqual(reserve("staff:c"), { allowed: false, retryAfter: 60 });
+  assert.equal(states.size, 2);
+});
