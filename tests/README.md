@@ -139,6 +139,10 @@ payment and order update handlers and checks that no API route parses an
 unbounded body. Staff JSON routes default to 32 KiB; orders allow 128 KiB, payments,
 terminal transfers and receipts 256 KiB, floor layouts 1 MiB and setup 2 MiB.
 
+`tip-limits.test.mjs` refuses anonymous QR tips above the order total or the
+10,000.00 ceiling before database work, and staff checkout tips that would take an
+account's collected tips above its bill.
+
 `cash-shift-route.test.mjs` checks negative derived drawer differences on close,
 history and replay while negative cash counts and payments remain forbidden.
 Integration concurrently sends checkout retries, independent full-payment requests,

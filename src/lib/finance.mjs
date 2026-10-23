@@ -109,6 +109,15 @@ export function centsToMoney(value) {
   return `${sign}${whole}.${fraction}`;
 }
 
+// A voluntary tip may not exceed the bill it accompanies. QR guests are anonymous,
+// so their tip requests also have a lower absolute ceiling than staff checkout.
+export const MAX_QR_TIP_CENTS = 1_000_000;
+export const MAX_STAFF_TIP_CENTS = 100_000_000;
+
+export function tipExceedsBill(tipCents, billCents) {
+  return safeCents(tipCents, "Tip") > safeCents(billCents, "Bill");
+}
+
 export function calculateItemsTotalCents(items) {
   if (!Array.isArray(items) || items.length === 0) {
     throw new FinanceError("invalid-items", "At least one order item is required.");

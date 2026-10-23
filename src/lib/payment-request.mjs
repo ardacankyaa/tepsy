@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import {
   discountPercentToBasisPoints,
+  MAX_STAFF_TIP_CENTS,
   paymentAmountToCents,
   moneyToCents,
   validatePaymentMethod,
@@ -83,7 +84,7 @@ export function parsePaymentRequest(body) {
   }
 
   const tipCents = body.tipAmount === undefined ? 0 : moneyToCents(body.tipAmount);
-  if (tipCents > 100000000)
+  if (tipCents > MAX_STAFF_TIP_CENTS)
     throw new PaymentRequestError(400, "invalid-tip", "Bahşiş tutarı çok yüksek.");
   let selectedItems;
   if (body.selectedItems !== undefined) {

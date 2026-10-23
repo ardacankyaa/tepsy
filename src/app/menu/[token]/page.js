@@ -567,6 +567,20 @@ export default function PublicMenuPage() {
       });
       return;
     }
+    if (
+      !existingAttempt &&
+      Math.round(Number(String(tipAmount || "0").replace(",", ".")) * 100) >
+        Math.round(cartTotal * 100)
+    ) {
+      setNotice({
+        tone: "error",
+        text:
+          lang === "tr"
+            ? "Bahşiş sipariş tutarını aşamaz."
+            : "The tip cannot be larger than the order total.",
+      });
+      return;
+    }
     const payload = {
       token,
       items: cartItems.map(({ id, quantity }) => ({ menuItemId: id, quantity })),

@@ -14,6 +14,7 @@ import {
   FinanceError,
   moneyToCents,
   planPayment,
+  tipExceedsBill,
 } from "@/lib/finance.mjs";
 import { parsePaymentRequest, PaymentRequestError } from "@/lib/payment-request.mjs";
 import {
@@ -224,6 +225,19 @@ async function createPayments(client, parsed) {
       "no-payable-orders",
       "Ödeme yapılacak açık sipariş bulunamadı."
     );
+  }
+
+  // Tips collected on this account, including this one, may not exceed its bill.
+  if (parsed.tipCents) {
+    const billCents = orders.reduce((sum, order) => sum + moneyToCents(order.totalPrice), 0);
+    const tippedCents = orders.reduce(
+      (sum, order) =>
+        sum +
+        order.payments.reduce((paid, payment) => paid + moneyToCents(payment.tipAmount || 0), 0),
+      0
+    );
+    if (tipExceedsBill(tippedCents + parsed.tipCents, billCents))
+      throw new PaymentRequestError(400, "tip-exceeds-bill", "Bahşiş hesap tutarını aşamaz.");
   }
 
   const discountUpdates = prepareDiscounts(orders, parsed);

@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { moneyToCents, centsToMoney } from "@/lib/finance.mjs";
+import { moneyToCents, centsToMoney, MAX_QR_TIP_CENTS, tipExceedsBill } from "@/lib/finance.mjs";
 import { Prisma } from "@prisma/client";
 import prisma from "@/lib/db";
 import { readRequestJson } from "@/lib/request-json.mjs";
@@ -72,7 +72,7 @@ export async function POST(request) {
     let tipCents;
     try {
       tipCents = moneyToCents(body.tipAmount ?? 0);
-      if (tipCents > 100000000) throw new Error();
+      if (tipCents > MAX_QR_TIP_CENTS) throw new Error();
     } catch {
       return NextResponse.json({ error: "Bahşiş tutarı geçersiz." }, { status: 400 });
     }
@@ -141,6 +141,9 @@ export async function POST(request) {
           (sum, item) => sum.plus(item.unitPrice.mul(item.quantity)),
           new Prisma.Decimal(0)
         );
+        // Anonymous guests may suggest a tip, but never one larger than this order.
+        if (tipExceedsBill(tipCents, moneyToCents(totalPrice.toFixed(2))))
+          return { error: "Bahşiş sipariş tutarını aşamaz.", status: 400 };
         const order = await tx.order.create({
           data: {
             tableId: table.id,
