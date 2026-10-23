@@ -29,7 +29,9 @@ API routes: `src/app/api/`. Permission rules: `src/lib/security-policy.cjs`.
 
 The gateway evaluates roles on the decoded request path that Next.js routes
 (`src/lib/request-path.cjs`). Paths with malformed escapes, encoded `/` or ``,
-dot segments or repeated slashes are refused with 400.
+dot segments or repeated slashes are refused with 400. Role-restricted API
+handlers also verify the current staff role themselves (`src/lib/route-access.mjs`,
+`src/lib/payment-access.mjs`), so they do not depend on the gateway alone.
 
 `server.js` replaces client-supplied `x-tepsy-client-ip` / `x-restopos-client-ip`
 headers with the TCP peer and a random per-process proof. Throttling, owner

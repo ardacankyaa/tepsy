@@ -114,7 +114,9 @@ See [TokenX setup and limitations](../docs/TOKENX-INTEGRATION.md).
 roles the gateway admits, and checks each role and anonymous access against
 percent-encoded, case-changed and trailing-slash spellings. Encoded separators,
 dot segments and malformed escapes must be refused. A new route file fails the
-test until it is listed.
+test until it is listed. Each role-restricted handler must also check the session
+role itself and admit no role beyond the gateway's; `route-access.test.mjs`
+exercises that check with real signed sessions.
 
 `trusted-client.test.cjs` checks that client address headers are ignored without
 the server's per-process proof, that stamping replaces client-supplied copies and

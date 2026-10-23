@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
+import { requireStaffRole } from "@/lib/route-access.mjs";
 import { DEFAULT_FLOOR_ELEMENTS } from "@/lib/floor-elements.mjs";
 import { canRunSetup } from "@/lib/setup-policy.cjs";
 import { normalizeMenuInput } from "@/lib/menu-input.cjs";
@@ -93,6 +94,8 @@ function tablePosition(index, count) {
 }
 
 export async function POST(request) {
+  const access = await requireStaffRole(request, prisma, ["ADMIN"]);
+  if (access.denied) return access.denied;
   try {
     const input = normalizeInput(await request.json());
     if (input.error) return NextResponse.json({ error: input.error }, { status: 400 });

@@ -10,7 +10,12 @@ import { hashCredential, verifyCredential } from "../src/lib/auth-local.js";
 
 const response = (body, options = {}) => ({ body, status: options.status ?? 200 });
 
-async function loadRoute(path, dependencies) {
+async function loadRoute(path, routeDependencies) {
+  // Role checks are covered by route-access tests; these cases exercise route logic.
+  const dependencies = {
+    requireStaffRole: async () => ({ session: { userId: "owner", role: "ADMIN" } }),
+    ...routeDependencies,
+  };
   const routeSource = (await readFile(new URL(path, import.meta.url), "utf8"))
     .replace(/^import[\s\S]*?from "[^"]+";\r?$/gm, "")
     .replace(/export /g, "");

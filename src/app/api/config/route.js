@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
+import { requireStaffRole } from "@/lib/route-access.mjs";
 import {
   credentialSessionVersion,
   normalizeRestaurantCode,
@@ -58,6 +59,8 @@ export async function GET() {
 }
 
 export async function PUT(request) {
+  const access = await requireStaffRole(request, prisma, ["ADMIN"]);
+  if (access.denied) return access.denied;
   try {
     const body = await request.json();
     if (!body || typeof body !== "object" || Array.isArray(body))

@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
+import { requireStaffRole } from "@/lib/route-access.mjs";
 import { recordAudit } from "@/lib/audit.mjs";
 import { orderListPage } from "@/lib/order-list-query.cjs";
 import { normalizeOrderRequest } from "@/lib/order-input.mjs";
@@ -84,6 +85,8 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
+  const access = await requireStaffRole(req, prisma, ["ADMIN", "WAITER", "CASHIER"]);
+  if (access.denied) return access.denied;
   try {
     let body;
     try {

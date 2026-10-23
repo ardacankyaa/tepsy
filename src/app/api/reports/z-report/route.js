@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
+import { requireStaffRole } from "@/lib/route-access.mjs";
 import { selectReportCurrency } from "@/lib/report-currency.mjs";
 import { centsToMoney, moneyToCents } from "@/lib/finance.mjs";
 import { summarizeRefunds } from "@/lib/refunds.mjs";
@@ -28,6 +29,8 @@ function serializeSalesRows(rows) {
 }
 
 export async function GET(request) {
+  const access = await requireStaffRole(request, prisma, ["ADMIN", "CASHIER"]);
+  if (access.denied) return access.denied;
   try {
     const { searchParams } = new URL(request.url);
     const period = searchParams.get("period") || "today";

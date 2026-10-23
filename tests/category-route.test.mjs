@@ -26,8 +26,15 @@ function loadDelete(productCount) {
     "prisma",
     "normalizeCategoryInput",
     "global",
+    "requireStaffRole",
     `${source}\nreturn DELETE;`
-  )(NextResponse, prisma, () => ({}), {});
+  )(
+    NextResponse,
+    prisma,
+    () => ({}),
+    {},
+    async () => ({ session: { role: "ADMIN" } })
+  );
   return { DELETE, deleted };
 }
 

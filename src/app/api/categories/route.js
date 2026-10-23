@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
+import { requireStaffRole } from "@/lib/route-access.mjs";
 import { normalizeCategoryInput } from "@/lib/category-input.cjs";
 
 export async function GET() {
@@ -22,6 +23,8 @@ export async function GET() {
 }
 
 export async function POST(request) {
+  const access = await requireStaffRole(request, prisma, ["ADMIN"]);
+  if (access.denied) return access.denied;
   try {
     const body = await request.json();
     const data = normalizeCategoryInput(body);
@@ -47,6 +50,8 @@ export async function POST(request) {
 }
 
 export async function PUT(request) {
+  const access = await requireStaffRole(request, prisma, ["ADMIN"]);
+  if (access.denied) return access.denied;
   try {
     const body = await request.json();
     const dataToUpdate = normalizeCategoryInput(body, true);
@@ -76,6 +81,8 @@ export async function PUT(request) {
 }
 
 export async function DELETE(request) {
+  const access = await requireStaffRole(request, prisma, ["ADMIN"]);
+  if (access.denied) return access.denied;
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");

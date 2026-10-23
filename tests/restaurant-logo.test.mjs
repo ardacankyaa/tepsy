@@ -4,9 +4,14 @@ import { readFile } from "node:fs/promises";
 import logo from "../src/lib/restaurant-logo.cjs";
 import setupPolicy from "../src/lib/setup-policy.cjs";
 import trusted from "../src/lib/trusted-client.cjs";
+import { requireStaffRole } from "../src/lib/route-access.mjs";
 const imageUrl = "/api/public/menu-images/" + "a".repeat(64) + ".webp";
 const json = (body, options = {}) => ({ body, status: options.status || 200 });
-async function route(name, dependencies) {
+async function route(name, routeDependencies) {
+  const dependencies = {
+    requireStaffRole: async () => ({ session: { userId: "owner", role: "ADMIN" } }),
+    ...routeDependencies,
+  };
   const source = (
     await readFile(new URL("../src/app/api/" + name + "/route.js", import.meta.url), "utf8")
   )
@@ -110,6 +115,7 @@ test("setup logo upload is permitted only on empty local installation", async ()
     canAccessInitialSetup: setupPolicy.canAccessInitialSetup,
     canRunSetup: setupPolicy.canRunSetup,
     trustedClientAddress: trusted.trustedClientAddress,
+    requireStaffRole,
     readImageRequest: async () => {
       read++;
       return { bytes: Buffer.from("sanitized fixture"), type: "image/png" };

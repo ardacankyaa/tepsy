@@ -1,7 +1,10 @@
 export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
+import { requireStaffRole } from "@/lib/route-access.mjs";
 export async function GET(request) {
+  const access = await requireStaffRole(request, prisma, ["ADMIN"]);
+  if (access.denied) return access.denied;
   try {
     const cursor = new URL(request.url).searchParams.get("before");
     if (cursor && !/^[A-Za-z0-9_-]{1,128}$/.test(cursor))

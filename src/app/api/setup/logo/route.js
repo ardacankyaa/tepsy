@@ -2,11 +2,14 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
+import { requireStaffRole } from "@/lib/route-access.mjs";
 import { canAccessInitialSetup, canRunSetup } from "@/lib/setup-policy.cjs";
 import { trustedClientAddress } from "@/lib/trusted-client.cjs";
 import { readImageRequest, storeMenuImage } from "@/lib/menu-images.cjs";
 
 export async function POST(request) {
+  const access = await requireStaffRole(request, prisma, ["ADMIN"]);
+  if (access.denied) return access.denied;
   try {
     // The custom server overwrites this header with the actual socket address.
     if (!canAccessInitialSetup(null, trustedClientAddress(request)))

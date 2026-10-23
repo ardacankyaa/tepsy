@@ -2,12 +2,12 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
+import { requireStaffRole } from "@/lib/route-access.mjs";
 import {
   canArchiveTable,
   canSetTableAvailable,
   canUpdateTableFields,
 } from "@/lib/table-archive.cjs";
-import { sessionFromRequest } from "@/lib/auth-local";
 import { validateTableDimensions } from "@/lib/floorplan-data.cjs";
 import { preferTableOrderItemNameSnapshots } from "@/lib/order-idempotency-server.mjs";
 import { normalizeTableInput, TableInputError } from "@/lib/table-input.cjs";
@@ -70,6 +70,8 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
+  const access = await requireStaffRole(req, prisma, ["ADMIN"]);
+  if (access.denied) return access.denied;
   try {
     const body = normalizeTableInput(await req.json(), true);
     const { tableNumber, capacity, section, posX, posY, shape, width, height } = body;
@@ -122,15 +124,11 @@ export async function POST(req) {
 }
 
 export async function PUT(req) {
+  const access = await requireStaffRole(req, prisma, ["ADMIN", "WAITER", "CASHIER"]);
+  if (access.denied) return access.denied;
   try {
     const body = normalizeTableInput(await req.json());
-    const authConfig = await prisma.restaurantConfig.findFirst({
-      select: { authEnabled: true, accessPasswordHash: true },
-    });
-    const role =
-      authConfig?.authEnabled && authConfig?.accessPasswordHash
-        ? sessionFromRequest(req)?.role
-        : "ADMIN";
+    const role = access.session.role;
     if (!canUpdateTableFields(role, body))
       return NextResponse.json({ error: "Yetkisiz masa değişikliği." }, { status: 403 });
     const { id, status, capacity, section, tableNumber, posX, posY, shape, width, height } = body;
@@ -204,6 +202,8 @@ export async function PUT(req) {
 }
 
 export async function DELETE(req) {
+  const access = await requireStaffRole(req, prisma, ["ADMIN"]);
+  if (access.denied) return access.denied;
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");

@@ -3,8 +3,11 @@ export const dynamic = "force-dynamic";
 import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
+import { requireStaffRole } from "@/lib/route-access.mjs";
 
 export async function POST(request) {
+  const access = await requireStaffRole(request, prisma, ["ADMIN"]);
+  if (access.denied) return access.denied;
   let body;
   try {
     body = await request.json();

@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
+import { requireStaffRole } from "@/lib/route-access.mjs";
 import { normalizeMenuInput } from "@/lib/menu-input.cjs";
 
 function writeErrorResponse(error, operation) {
@@ -62,6 +63,8 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  const access = await requireStaffRole(request, prisma, ["ADMIN"]);
+  if (access.denied) return access.denied;
   try {
     const body = await request.json();
     const data = normalizeMenuInput(body, false);
@@ -84,6 +87,8 @@ export async function POST(request) {
 }
 
 export async function PUT(request) {
+  const access = await requireStaffRole(request, prisma, ["ADMIN"]);
+  if (access.denied) return access.denied;
   try {
     const body = await request.json();
     if (
@@ -119,6 +124,8 @@ export async function PUT(request) {
 }
 
 export async function DELETE(request) {
+  const access = await requireStaffRole(request, prisma, ["ADMIN"]);
+  if (access.denied) return access.denied;
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");

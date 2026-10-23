@@ -235,6 +235,38 @@ test("encoded separators, dot segments and malformed escapes are refused for eve
   }
 });
 
+// Handler-level guards behind the gateway and the roles each one admits at most.
+const LEGACY_GUARDS = [
+  [/actor\.role !== "ADMIN"/, ADMIN],
+  [/authorizePaymentAccess\(request, prisma\)/, ["ADMIN", "CASHIER"]],
+  [/authorizeCashier\(request, prisma\)/, ["ADMIN", "CASHIER"]],
+  [/await owner\(request\)/, ADMIN],
+  [/await authorize\(request\)/, ADMIN],
+  [/session\?\.role !== "ADMIN"/, ADMIN],
+];
+
+function handlerGuardRoles(source, method) {
+  const start = source.search(new RegExp(`^export async function ${method}\\(`, "m"));
+  if (start < 0) return null;
+  const next = source.slice(start + 1).search(/^export /m);
+  const body = next < 0 ? source.slice(start) : source.slice(start, start + 1 + next);
+  const guard = body.match(/requireStaffRole\(\w+, prisma, (\[[^\]]*\])\)/);
+  if (guard) return JSON.parse(guard[1]);
+  for (const [pattern, roles] of LEGACY_GUARDS) if (pattern.test(body)) return roles;
+  return null;
+}
+
+test("every role-restricted API handler checks the session role itself", () => {
+  for (const [route, method, expected] of ROUTES) {
+    if (!route.startsWith("/api/") || expected === PUBLIC || expected === ALL) continue;
+    const file = path.resolve(__dirname, `../src/app${route}/route.js`);
+    const roles = handlerGuardRoles(fs.readFileSync(file, "utf8"), method);
+    assert.ok(roles, `${method} ${route} has no handler-level role check`);
+    for (const role of roles)
+      assert.ok(expected.includes(role), `${method} ${route} handler admits ${role}`);
+  }
+});
+
 test("reported encoded admin paths are denied to kitchen, waiter and cashier staff", () => {
   for (const target of [
     "/api/%62ackup",

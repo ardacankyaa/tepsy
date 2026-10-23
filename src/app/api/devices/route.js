@@ -2,10 +2,14 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
+import prisma from "@/lib/db";
+import { requireStaffRole } from "@/lib/route-access.mjs";
 import { readDeviceConfig, writeDeviceConfig } from "@/lib/devices/config";
 import { PRINTER_ADAPTERS, PAYMENT_ADAPTERS } from "@/lib/devices/validation";
 
-export async function GET() {
+export async function GET(request) {
+  const access = await requireStaffRole(request, prisma, ["ADMIN"]);
+  if (access.denied) return access.denied;
   try {
     const config = await readDeviceConfig();
     return NextResponse.json({
@@ -23,6 +27,8 @@ export async function GET() {
 }
 
 export async function PUT(request) {
+  const access = await requireStaffRole(request, prisma, ["ADMIN"]);
+  if (access.denied) return access.denied;
   try {
     const body = await request.json();
     const config = await writeDeviceConfig(body);

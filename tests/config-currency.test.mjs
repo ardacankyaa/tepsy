@@ -21,6 +21,7 @@ function route(active) {
   };
   client.$transaction = (fn) => fn(client);
   const deps = {
+    requireStaffRole: async () => ({ session: { userId: "owner", role: "ADMIN" } }),
     prisma: client,
     normalizeRestaurantLogoUrl,
     normalizeRestaurantCode: (v) => v,

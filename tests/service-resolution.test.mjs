@@ -8,6 +8,15 @@ const source = (
   .replace(/^import[^\r\n]*;?\r?\n/gm, "")
   .replace(/export /g, "");
 const NextResponse = { json: (body, options = {}) => ({ body, status: options.status ?? 200 }) };
+// Role checks are covered by the route access tests; these cases exercise resolution.
+const allowWaiter = async () => ({ session: { userId: "waiter-1", role: "WAITER" } });
+const loadPatch = (prisma, io) =>
+  new Function("NextResponse", "prisma", "global", "requireStaffRole", `${source}\nreturn PATCH;`)(
+    NextResponse,
+    prisma,
+    { io },
+    allowWaiter
+  );
 
 for (const type of ["BILL", "WAITER"]) {
   test(`${type} resolution updates the correct table and notifies checkout only for a bill`, async () => {
@@ -38,11 +47,7 @@ for (const type of ["BILL", "WAITER"]) {
         events.push({ name, data });
       },
     };
-    const PATCH = new Function("NextResponse", "prisma", "global", `${source}\nreturn PATCH;`)(
-      NextResponse,
-      prisma,
-      { io: room }
-    );
+    const PATCH = loadPatch(prisma, room);
     const result = await PATCH({ json: async () => ({ id: entry.id, action: "RESOLVE" }) });
     assert.equal(result.status, 200);
     assert.equal(writes.length, type === "BILL" ? 1 : 0);
@@ -75,17 +80,11 @@ test("a previously resolved bill cannot change the table or emit another notific
     table: { updateMany: async () => assert.fail("must not update table") },
     $transaction: async (work) => work(prisma),
   };
-  const PATCH = new Function("NextResponse", "prisma", "global", `${source}\nreturn PATCH;`)(
-    NextResponse,
-    prisma,
-    {
-      io: {
-        to() {
-          assert.fail("must not emit");
-        },
-      },
-    }
-  );
+  const PATCH = loadPatch(prisma, {
+    to() {
+      assert.fail("must not emit");
+    },
+  });
   assert.equal(
     (await PATCH({ json: async () => ({ id: "call-1", action: "RESOLVE" }) })).status,
     409

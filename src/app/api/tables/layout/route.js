@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
+import { requireStaffRole } from "@/lib/route-access.mjs";
 import { validateTableLayoutPayload } from "@/lib/floorplan-data.cjs";
 
 async function handleLayoutUpdate(request) {
@@ -56,9 +57,13 @@ async function handleLayoutUpdate(request) {
 }
 
 export async function POST(request) {
+  const access = await requireStaffRole(request, prisma, ["ADMIN"]);
+  if (access.denied) return access.denied;
   return handleLayoutUpdate(request);
 }
 
 export async function PUT(request) {
+  const access = await requireStaffRole(request, prisma, ["ADMIN"]);
+  if (access.denied) return access.denied;
   return handleLayoutUpdate(request);
 }

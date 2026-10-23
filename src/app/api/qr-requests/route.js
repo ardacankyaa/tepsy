@@ -2,9 +2,12 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
+import { requireStaffRole } from "@/lib/route-access.mjs";
 import { preferOrderItemNameSnapshots } from "@/lib/order-idempotency-server.mjs";
 
-export async function GET() {
+export async function GET(request) {
+  const access = await requireStaffRole(request, prisma, ["ADMIN", "WAITER"]);
+  if (access.denied) return access.denied;
   const orders = await prisma.order.findMany({
     where: { status: "AWAITING_WAITER_APPROVAL", source: "QR" },
     orderBy: { createdAt: "asc" },
@@ -29,6 +32,8 @@ export async function GET() {
 }
 
 export async function PATCH(request) {
+  const access = await requireStaffRole(request, prisma, ["ADMIN", "WAITER"]);
+  if (access.denied) return access.denied;
   try {
     let body;
     try {

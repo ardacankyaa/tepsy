@@ -2,6 +2,8 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
+import prisma from "@/lib/db";
+import { requireStaffRole } from "@/lib/route-access.mjs";
 import os from "os";
 import networkAddress from "@/lib/network-address.cjs";
 import { readDeviceConfig, writeDeviceConfig } from "@/lib/devices/config";
@@ -34,6 +36,8 @@ export async function GET() {
 }
 
 export async function PUT(request) {
+  const access = await requireStaffRole(request, prisma, ["ADMIN"]);
+  if (access.denied) return access.denied;
   try {
     const body = await request.json();
     if (
