@@ -153,7 +153,9 @@ terminal transfers and receipts 256 KiB, floor layouts 1 MiB and setup 2 MiB.
 
 `tip-limits.test.mjs` refuses anonymous QR tips above the order total or the
 10,000.00 ceiling before database work, and staff checkout tips that would take an
-account's collected tips above its bill.
+account's collected tips above its bill after discount (including one applied by
+the same request) for full, custom split and selected-item payments. Refunded tips
+no longer count toward that limit.
 
 `cash-shift-route.test.mjs` checks negative derived drawer differences on close,
 history and replay while negative cash counts and payments remain forbidden.

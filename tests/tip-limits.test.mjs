@@ -9,6 +9,7 @@ import * as idempotency from "../src/lib/payment-idempotency.mjs";
 import qrPolicy from "../src/lib/qr-policy.cjs";
 import { assertCardPaymentAllowed } from "../src/lib/card-payment-policy.mjs";
 import { readRequestJson } from "../src/lib/request-json.mjs";
+import { planItemPayment } from "../src/lib/item-payments.mjs";
 
 const NextResponse = { json: (body, options = {}) => ({ body, status: options.status || 200 }) };
 
@@ -103,15 +104,27 @@ test("QR tips above the absolute ceiling are refused before any database work", 
   assert.equal(qr.created.length, 0);
 });
 
-function staffPaymentRoute(orders) {
+function staffPaymentRoute(orders, refunds = []) {
   const reached = [];
+  const discounts = [];
   const tx = {
     paymentAttempt: { findUnique: async () => null, create: async () => {} },
     cashShift: {
       findUnique: async () => ({ id: "shift-1", status: "OPEN", activeKey: "ACTIVE" }),
     },
     table: { findUnique: async () => ({ id: "table-1" }) },
-    order: { findMany: async () => orders, findUnique: async () => orders[0] },
+    order: {
+      findMany: async () => orders,
+      findUnique: async () => orders[0],
+      updateMany: async ({ data }) => {
+        discounts.push(data);
+        return { count: 1 };
+      },
+    },
+    refund: {
+      findMany: async ({ where }) =>
+        refunds.filter((refund) => where.paymentId.in.includes(refund.paymentId)),
+    },
     payment: {
       create: async ({ data }) => {
         reached.push(data);
@@ -125,6 +138,7 @@ function staffPaymentRoute(orders) {
     ...shifts,
     ...idempotency,
     assertCardPaymentAllowed,
+    planItemPayment,
     readRequestJson,
     authorizePaymentAccess: async () => null,
     prisma: { $transaction: (work) => work(tx) },
@@ -132,7 +146,7 @@ function staffPaymentRoute(orders) {
     NextResponse,
     global: {},
   };
-  return { dependencies, reached };
+  return { dependencies, reached, discounts };
 }
 
 test("staff checkout tips cannot exceed the account bill, counting tips already taken", async () => {
@@ -182,4 +196,125 @@ test("staff checkout tips cannot exceed the account bill, counting tips already 
   const ceiling = await pay("1000000.01");
   assert.equal(ceiling.result.status, 400);
   assert.equal(ceiling.result.body.code, "invalid-tip");
+});
+
+// An account of 40.00 + 20.00 with a 25% discount (net 45.00). The first guest paid
+// one item with a 5.00 tip.
+function discountedAccount({ discounted = true, paid = true } = {}) {
+  const item = (id, quantity, paidQuantity = 0) => ({
+    id,
+    unitPrice: "20.00",
+    quantity,
+    paidQuantity,
+    status: "DELIVERED",
+    menuItem: { name: "Kebab" },
+  });
+  const discount = (amount) =>
+    discounted
+      ? { discountPercent: "25", discountAmount: amount, discountReason: "Regular guest" }
+      : { discountPercent: "0", discountAmount: "0.00", discountReason: null };
+  return [
+    {
+      id: "order-1",
+      status: "DELIVERED",
+      totalPrice: "40.00",
+      ...discount("10.00"),
+      items: [item("item-1", 2, paid ? 1 : 0)],
+      payments: paid
+        ? [
+            {
+              id: "payment-1",
+              orderId: "order-1",
+              amountPaid: "15.00",
+              tipAmount: "5.00",
+              itemsJson: JSON.stringify([{ orderItemId: "item-1", quantity: 1 }]),
+            },
+          ]
+        : [],
+    },
+    {
+      id: "order-2",
+      status: "DELIVERED",
+      totalPrice: "20.00",
+      ...discount("5.00"),
+      items: [item("item-2", 1)],
+      payments: [],
+    },
+  ];
+}
+
+let paymentKeys = 0;
+async function staffPayment(orders, body, refunds = []) {
+  const source = await routeSource("pos/payment");
+  const fixture = staffPaymentRoute(orders, refunds);
+  const POST = new Function(...Object.keys(fixture.dependencies), `${source}\nreturn POST;`)(
+    ...Object.values(fixture.dependencies)
+  );
+  const result = await POST(
+    json("http://localhost/api/pos/payment", {
+      tableId: "table-1",
+      paymentMethod: "CASH",
+      idempotencyKey: `tip-limit-${++paymentKeys}`,
+      ...body,
+    })
+  );
+  return { result, reached: fixture.reached, discounts: fixture.discounts };
+}
+
+function assertTipLimit(outcome, label) {
+  assert.equal(outcome.over.result.status, 400, label);
+  assert.equal(outcome.over.result.body.code, "tip-exceeds-bill", label);
+  assert.equal(outcome.over.reached.length, 0, label);
+  assert.equal(outcome.exact.result.body.code, "reached-payment", label);
+}
+
+test("checkout tip limit uses the bill after discount, including a new discount", async () => {
+  const body = { discountPercent: "50", discountReason: "Staff meal" };
+  const fresh = () => discountedAccount({ discounted: false, paid: false });
+  const over = await staffPayment(fresh(), { ...body, tipAmount: "30.01" });
+  const exact = await staffPayment(fresh(), { ...body, tipAmount: "30.00" });
+  assertTipLimit({ over, exact }, "new 50% discount");
+  assert.equal(over.discounts.length, 0, "a refused tip writes no discount");
+  assert.equal(exact.reached[0].tipAmount, "30.00");
+});
+
+test("checkout tip limit applies to full, custom split and item payments of a discounted account", async () => {
+  for (const [label, body] of [
+    ["remaining balance", {}],
+    ["custom split amount", { amountPaid: "10.00" }],
+    ["selected items", { selectedItems: [{ orderItemId: "item-2", quantity: 1 }] }],
+  ]) {
+    const over = await staffPayment(discountedAccount(), { ...body, tipAmount: "40.01" });
+    const exact = await staffPayment(discountedAccount(), { ...body, tipAmount: "40.00" });
+    assertTipLimit({ over, exact }, label);
+    assert.equal(exact.reached[0].tipAmount, "40.00", label);
+  }
+});
+
+test("refunded tips no longer count toward the checkout tip limit", async () => {
+  for (const [label, refunds, limit] of [
+    ["full tip refund", [{ paymentId: "payment-1", tipAmount: "5.00" }], "45.00"],
+    [
+      "partial tip refunds",
+      [
+        { paymentId: "payment-1", tipAmount: "1.50" },
+        { paymentId: "payment-1", tipAmount: "0.50" },
+      ],
+      "42.00",
+    ],
+    ["principal-only refund", [{ paymentId: "payment-1", tipAmount: "0.00" }], "40.00"],
+    ["another account's refund", [{ paymentId: "elsewhere", tipAmount: "5.00" }], "40.00"],
+  ]) {
+    const over = await staffPayment(
+      discountedAccount(),
+      { amountPaid: "10.00", tipAmount: (Number(limit) + 0.01).toFixed(2) },
+      refunds
+    );
+    const exact = await staffPayment(
+      discountedAccount(),
+      { amountPaid: "10.00", tipAmount: limit },
+      refunds
+    );
+    assertTipLimit({ over, exact }, label);
+  }
 });

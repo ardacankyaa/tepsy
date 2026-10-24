@@ -258,8 +258,10 @@ installments do not identify products. Do not combine item selection and a custo
 QR customers can request a voluntary tip; it is not a card charge. Confirm or edit
 the tip at POS before collecting. Tips are added to this collection, shown separately
 on receipts and reports, and counted in the cash drawer when paid in cash. The tip
-field resets after each successful collection. TokenX full-bill transfer does not
-support selected-item or tip requests; collect externally and record with Other.
+field resets after each successful collection. Tips kept on one account cannot exceed
+its bill after discount; refunded tips no longer count toward that limit. TokenX
+full-bill transfer does not support selected-item or tip requests; collect externally
+and record with Other.
 
 POS → Payment history → **Refund / correction** records an externally completed
 refund. Administrators only; an open cash shift, a reason and explicit external

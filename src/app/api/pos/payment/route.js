@@ -227,20 +227,42 @@ async function createPayments(client, parsed) {
     );
   }
 
-  // Tips collected on this account, including this one, may not exceed its bill.
+  const discountUpdates = prepareDiscounts(orders, parsed);
+
+  // Tips kept on this account, including this one, may not exceed its payable bill:
+  // the total after discount (including one applied by this request). Refunded tips
+  // were returned to the guest and no longer count.
   if (parsed.tipCents) {
-    const billCents = orders.reduce((sum, order) => sum + moneyToCents(order.totalPrice), 0);
-    const tippedCents = orders.reduce(
-      (sum, order) =>
-        sum +
-        order.payments.reduce((paid, payment) => paid + moneyToCents(payment.tipAmount || 0), 0),
-      0
+    const newDiscounts = new Map(discountUpdates.map((entry) => [entry.orderId, entry]));
+    const billCents = sumCents(
+      orders.map(
+        (order) =>
+          moneyToCents(order.totalPrice) -
+          (newDiscounts.get(order.id)?.discountCents ?? moneyToCents(order.discountAmount ?? "0"))
+      ),
+      "Bill total"
     );
-    if (tipExceedsBill(tippedCents + parsed.tipCents, billCents))
+    const payments = orders.flatMap((order) => order.payments || []);
+    const paymentIds = payments.map((payment) => payment.id).filter(Boolean);
+    const refunds = paymentIds.length
+      ? await client.refund.findMany({
+          where: { paymentId: { in: paymentIds } },
+          select: { tipAmount: true },
+        })
+      : [];
+    const tippedCents =
+      sumCents(
+        payments.map((payment) => moneyToCents(payment.tipAmount || 0)),
+        "Tip total"
+      ) -
+      sumCents(
+        refunds.map((refund) => moneyToCents(refund.tipAmount || 0)),
+        "Refunded tip total"
+      );
+    if (tipExceedsBill(Math.max(0, tippedCents) + parsed.tipCents, billCents))
       throw new PaymentRequestError(400, "tip-exceeds-bill", "Bahşiş hesap tutarını aşamaz.");
   }
 
-  const discountUpdates = prepareDiscounts(orders, parsed);
   for (const discount of discountUpdates) {
     const order = orders.find((candidate) => candidate.id === discount.orderId);
     const update = await client.order.updateMany({
