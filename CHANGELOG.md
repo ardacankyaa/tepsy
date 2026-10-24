@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.2 — October 2026
+
+- Security: the per-account sign-in lockout added in 1.1.1 could be used to lock people out. Wrong restaurant codes counted toward an account, and a locked account refused every device, even with the correct password. Because the restaurant code is shown publicly, anyone who could reach TEPSY could keep the owner or a staff member from signing in with a few requests; only a restart cleared it. A wrong restaurant code now counts only against that device's attempt limit. A locked account refuses only the devices that entered a wrong password or PIN for it, so other devices and the server computer itself can still sign in, while guessing from many addresses stays slowed (one guess per new address while locked; an IPv6 /64 counts as one address). Owner recovery, owner password changes and staff PIN resets clear the lockout, and restarting TEPSY clears all sign-in limits. Update existing installations promptly.
+- Sign-in limits no longer refuse new devices or staff names once their tracking tables are full; the oldest entries are forgotten instead, and active lockouts are kept longest.
+- The checkout tip limit uses the bill after discount, and refunded tips no longer count toward it.
+- Updated the zod development dependency to 4.6.7 (GHSA-mrhx-c7xc-m3w5) and CI actions to checkout, setup-node, setup-python and upload-artifact 7.
+
 ## 1.1.1 — October 2026
 
 - Security: role checks now evaluate the same decoded request path that Next.js routes. Previously an alternative spelling of a restricted address could let a signed-in staff member of any role reach administrator-only pages and APIs, such as backups, activity history, device settings, staff and reports. Paths with malformed escapes, encoded separators, dot segments or repeated slashes are refused, and every role-restricted API handler now verifies the session role itself. Update existing installations promptly.
