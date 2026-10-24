@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { currentStaffSession } from "../src/lib/security-policy.cjs";
 import { normalizeStaffCreate, normalizeStaffUpdate } from "../src/lib/staff-input.cjs";
+import throttle from "../src/lib/auth-throttle.cjs";
+import trusted from "../src/lib/trusted-client.cjs";
 // Request doubles expose json(); real-stream size limits are covered in request-body tests.
 const readRequestJson = async (request) => {
   try {
@@ -43,7 +45,7 @@ test("staff settings still require admin when password protection is configured"
   assert.equal(response.status, 403);
 });
 
-function staffRoutes(actor, targetRole = "ADMIN") {
+function staffRoutes(actor, targetRole = "ADMIN", lockout = throttle.createAccountLockout()) {
   let writes = 0;
   const session = {
     userId: actor,
@@ -60,6 +62,7 @@ function staffRoutes(actor, targetRole = "ADMIN") {
     staffUser: {
       findUnique: async ({ where }) => ({
         id: where.id,
+        name: where.id === actor ? "Admin" : "Ali",
         role: where.id === actor ? "ADMIN" : targetRole,
         isActive: true,
       }),
@@ -88,6 +91,8 @@ function staffRoutes(actor, targetRole = "ADMIN") {
     "hashCredential",
     "disconnectStaffSockets",
     "readRequestJson",
+    "clearAccountLockout",
+    "loginAccountKey",
     `${source}\nreturn {POST, PUT, DELETE};`
   )(
     NextResponse,
@@ -99,7 +104,9 @@ function staffRoutes(actor, targetRole = "ADMIN") {
     normalizeStaffUpdate,
     () => "hashed-pin",
     () => {},
-    readRequestJson
+    readRequestJson,
+    lockout.clear,
+    throttle.loginAccountKey
   );
   return { routes, writes: () => writes };
 }
@@ -143,4 +150,32 @@ test("owner can demote an administrator; staff admin can manage ordinary staff",
     );
     assert.equal(fixture.writes(), 1);
   }
+});
+
+test("an administrator PIN reset lifts that staff member's sign-in lockout", async () => {
+  const lockout = throttle.createAccountLockout();
+  const peer = {
+    headers: new Headers({
+      "x-tepsy-client-ip": "192.168.5.21",
+      [trusted.PROOF_HEADER]: trusted.installTrustedClientProof(),
+    }),
+  };
+  const lock = (name) => {
+    for (let index = 0; index < 10; index++) lockout(throttle.loginAccountKey(name), peer);
+    assert.equal(lockout(throttle.loginAccountKey(name), peer).allowed, false);
+  };
+  lock("Ali");
+  lock("Ayşe");
+  const fixture = staffRoutes("owner", "WAITER", lockout);
+  assert.equal(
+    (await fixture.routes.PUT({ json: async () => ({ id: "target", role: "CASHIER" }) })).status,
+    200
+  );
+  assert.equal(lockout("staff:ali", peer).allowed, false, "other changes keep the lockout");
+  assert.equal(
+    (await fixture.routes.PUT({ json: async () => ({ id: "target", pin: "4821" }) })).status,
+    200
+  );
+  assert.equal(lockout("staff:ali", peer).allowed, true);
+  assert.equal(lockout(throttle.loginAccountKey("Ayşe"), peer).allowed, false);
 });

@@ -21,6 +21,13 @@ import {
 } from "@/lib/auth-throttle.cjs";
 import { readAuthenticationBody } from "@/lib/authentication-body.mjs";
 
+function tooManyAttempts(retryAfter) {
+  return NextResponse.json(
+    { error: "Çok fazla başarısız deneme. Bir süre sonra tekrar deneyin." },
+    { status: 429, headers: { "Retry-After": String(retryAfter) } }
+  );
+}
+
 export async function POST(request) {
   try {
     const body = await readAuthenticationBody(request);
@@ -39,17 +46,7 @@ export async function POST(request) {
     const credential = String(body.password || body.pin || "");
     const username = String(body.username || "").trim();
     const attempt = reserveAuthenticationAttempt(request);
-    const account = attempt.allowed ? reserveAccountAttempt(loginAccountKey(username)) : attempt;
-    if (!attempt.allowed || !account.allowed) {
-      const retryAfter = attempt.allowed ? account.retryAfter : attempt.retryAfter;
-      return NextResponse.json(
-        { error: "Çok fazla başarısız deneme. Bir süre sonra tekrar deneyin." },
-        {
-          status: 429,
-          headers: { "Retry-After": String(retryAfter) },
-        }
-      );
-    }
+    if (!attempt.allowed) return tooManyAttempts(attempt.retryAfter);
     const config = await prisma.restaurantConfig.findFirst();
 
     if (!config || !config.authEnabled || !config.accessPasswordHash) {
@@ -58,10 +55,14 @@ export async function POST(request) {
         { status: 409 }
       );
     }
+    // The restaurant code is public, so a wrong code counts only against this
+    // client's quota; it must not count toward (and lock) the owner or a staff account.
     if (restaurantCode !== config.restaurantCode) {
       rejectUnknownCredential(credential);
       return NextResponse.json({ error: "Giriş bilgileri hatalı." }, { status: 401 });
     }
+    const account = reserveAccountAttempt(loginAccountKey(username), request);
+    if (!account.allowed) return tooManyAttempts(account.retryAfter);
 
     // Every outcome performs at least one full credential hash, so timing does not
     // reveal whether a staff name exists.

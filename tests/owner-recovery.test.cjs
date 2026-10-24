@@ -5,6 +5,7 @@ const os = require("node:os");
 const path = require("node:path");
 const recovery = require("../src/lib/owner-recovery.cjs");
 const trusted = require("../src/lib/trusted-client.cjs");
+const { createAccountLockout } = require("../src/lib/auth-throttle.cjs");
 
 function fixture(t) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "tepsy-recovery-"));
@@ -178,7 +179,7 @@ test("recovery requires the actual loopback peer, and its independent shared quo
   assert.equal(reserve().allowed, false);
 });
 
-function routeFixture(root) {
+function routeFixture(root, lockout = createAccountLockout()) {
   const source = fs
     .readFileSync(path.join(__dirname, "../src/app/api/auth/recover/route.js"), "utf8")
     .replace(/^import[\s\S]*?from "[^"]+";\r?$/gm, "")
@@ -223,6 +224,7 @@ function routeFixture(root) {
       state.invalidations++;
     },
     consumeRecoveryCode: (options) => recovery.consumeRecoveryCode({ ...options, root }),
+    clearAccountLockout: lockout.clear,
     isLocalRecoveryRequest: recovery.isLocalRecoveryRequest,
     reserveRecoveryAttempt: recovery.createRecoveryThrottle({ state: {} }),
     global: {},
@@ -272,6 +274,24 @@ test("recovery route uses credential CAS, invalidates all sessions and creates n
     "invalid-recovery-code"
   );
   assert.equal(state.writes.length, 1);
+});
+test("successful recovery lifts the owner's sign-in lockout; a failed one does not", async (t) => {
+  const root = fixture(t);
+  const lockout = createAccountLockout();
+  const { post } = routeFixture(root, lockout);
+  const peer = {
+    headers: new Headers({
+      "x-tepsy-client-ip": "192.168.5.20",
+      [trusted.PROOF_HEADER]: trusted.installTrustedClientProof(),
+    }),
+  };
+  for (let index = 0; index < 10; index++) lockout("owner", peer);
+  assert.equal(lockout("owner", peer).allowed, false);
+  assert.equal((await post({ code: "wrong", newPassword: "strong-password" })).status, 400);
+  assert.equal(lockout("owner", peer).allowed, false);
+  const { code } = recovery.issueRecoveryCode({ root, passwordHash: "old" });
+  assert.equal((await post({ code, newPassword: "strong-password" })).status, 200);
+  assert.equal(lockout("owner", peer).allowed, true);
 });
 test("a password changed during recovery cannot be overwritten by an older proof", async (t) => {
   const root = fixture(t);

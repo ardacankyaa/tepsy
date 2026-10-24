@@ -26,6 +26,7 @@ function request(body, ip = "192.168.20.44") {
 }
 
 async function routes(quota, { staff = [], now = () => 100000 } = {}) {
+  const lockout = throttle.createAccountLockout({ now });
   let verifications = 0;
   let unknown = 0;
   let updates = 0;
@@ -77,7 +78,9 @@ async function routes(quota, { staff = [], now = () => 100000 } = {}) {
       return false;
     },
     loginAccountKey: throttle.loginAccountKey,
-    reserveAccountAttempt: throttle.createAccountLockout({ now }),
+    reserveAccountAttempt: lockout,
+    clearAccountLockout: lockout.clear,
+    isServerComputerRequest: trusted.isServerComputerRequest,
     canBootstrapPasswordChange: () => !config.accessPasswordHash,
     canChangeOwnerPassword: ({ canBootstrap, knowsCurrent }) => canBootstrap || knowsCurrent,
     currentStaffSession: async () => null,
@@ -85,7 +88,6 @@ async function routes(quota, { staff = [], now = () => 100000 } = {}) {
     invalidateAuthConfigCache: () => {},
     reserveAuthenticationAttempt: quota,
     readAuthenticationBody: (req) => req.json(),
-    trustedClientAddress: trusted.trustedClientAddress,
     globalThis: {},
   };
   return {
@@ -210,7 +212,7 @@ test("login spends one credential hash whether or not the staff name or code exi
   }
 });
 
-test("guesses against one account from many addresses lock it with backoff", async () => {
+test("guesses from many addresses lock the account for those addresses, with backoff", async () => {
   let time = 100000;
   const app = await routes(openQuota, { staff: staffMembers, now: () => time });
   const guess = (pin, ip, username = "Ali") =>
@@ -218,20 +220,125 @@ test("guesses against one account from many addresses lock it with backoff", asy
   for (let index = 0; index < 10; index++)
     assert.equal((await guess(String(index).padStart(4, "0"), `10.0.0.${index}`)).status, 401);
   const before = app.counts().verifications;
-  const locked = await guess("4821", "10.0.1.1");
-  assert.equal(locked.status, 429, "the correct PIN is refused while the account is locked");
+  const locked = await guess("4821", "10.0.0.3");
+  assert.equal(locked.status, 429, "a peer that guessed wrong is refused while locked");
   assert.equal(locked.headers["Retry-After"], "60");
-  assert.equal(app.counts().verifications, before, "no hash is spent on a locked account");
-  // Another account and an unknown name with the same history are independent but equal.
-  assert.equal((await guess("1357", "10.0.1.2", "Ayşe")).status, 200);
+  assert.equal(app.counts().verifications, before, "no hash is spent on a refused peer");
+  // Another account with the same history is independent.
+  assert.equal((await guess("1357", "10.0.0.4", "Ayşe")).status, 200);
   time += 60_000;
-  assert.equal((await guess("9999", "10.0.1.3")).status, 401);
-  const longer = await guess("4821", "10.0.1.4");
+  assert.equal((await guess("9999", "10.0.0.5")).status, 401);
+  const longer = await guess("4821", "10.0.0.6");
   assert.equal(longer.status, 429);
   assert.equal(longer.headers["Retry-After"], "120");
   time += 120_000;
-  assert.equal((await guess("4821", "10.0.1.5")).status, 200, "a correct PIN clears the lock");
-  assert.equal((await guess("0000", "10.0.1.6")).status, 401);
+  assert.equal((await guess("4821", "10.0.0.6")).status, 200, "the lock expires");
+});
+
+test("wrong restaurant codes from several peers cannot lock the owner or staff out", async () => {
+  // A real per-address quota, as in production: eight attempts per address.
+  const quota = throttle.createAuthenticationThrottle({ now: () => 100000 });
+  const app = await routes(quota, { staff: staffMembers });
+  const peers = ["192.168.20.51", "192.168.20.52", "192.168.20.53"];
+  for (const ip of peers)
+    for (let index = 0; index < 6; index++)
+      assert.equal(
+        (await app.login(request({ restaurantCode: "WRONG", password: "x" }, ip))).status,
+        401
+      );
+  for (const ip of peers)
+    assert.equal(
+      (await app.login(request({ restaurantCode: "WRONG", username: "Ali", pin: "0" }, ip))).status,
+      401
+    );
+  // These 21 failed attempts locked both accounts in 1.1.1.
+  const owner = (ip) => app.login(request({ restaurantCode: "TEST", password: "correct" }, ip));
+  assert.equal((await owner("127.0.0.1")).status, 200, "the server computer signs in");
+  assert.equal((await owner("192.168.20.60")).status, 200, "a clean LAN device signs in");
+  assert.equal((await owner(peers[2])).status, 200, "a wrong code does not mark the peer");
+  assert.equal(
+    (await app.login(request({ restaurantCode: "TEST", username: "Ali", pin: "4821" }, peers[0])))
+      .status,
+    200
+  );
+  // The per-address quota still applies to the peers that sent wrong codes.
+  await app.login(request({ restaurantCode: "WRONG", password: "x" }, peers[1]));
+  assert.equal((await owner(peers[1])).status, 429);
+});
+
+test("a locked owner still signs in from the server computer and from a clean device", async () => {
+  const app = await routes(openQuota);
+  const login = (password, ip) => app.login(request({ restaurantCode: "TEST", password }, ip));
+  for (let index = 0; index < 12; index++)
+    assert.equal((await login("wrong", `10.2.0.${index}`)).status, 401);
+  assert.equal((await login("correct", "10.2.0.1")).status, 429);
+  for (const ip of ["127.0.0.1", "::1", "::ffff:127.0.0.1", "10.2.1.1"])
+    assert.equal((await login("correct", ip)).status, 200, ip);
+  // The clean device's success credited only its own reservation.
+  assert.equal((await login("correct", "10.2.0.2")).status, 429);
+  // Failures at the server computer itself are neither refused nor counted.
+  for (let index = 0; index < 20; index++)
+    assert.equal((await login("wrong", "127.0.0.1")).status, 401);
+  assert.equal((await login("correct", "10.2.1.2")).status, 200);
+  // Other loopback aliases are ordinary peers.
+  assert.equal((await login("wrong", "127.0.0.2")).status, 401);
+  assert.equal((await login("correct", "127.0.0.2")).status, 429);
+});
+
+test("guessing a staff PIN from rotating peers is still throttled", async () => {
+  let time = 100000;
+  const app = await routes(openQuota, { staff: staffMembers, now: () => time });
+  const guess = (pin, ip) =>
+    app.login(request({ restaurantCode: "TEST", username: "Ali", pin }, ip));
+  let guesses = 0;
+  let pin = 0;
+  const next = () => String(pin++).padStart(4, "0");
+  for (let index = 0; index < 10; index++) {
+    assert.equal((await guess(next(), `10.3.0.${index}`)).status, 401);
+    guesses++;
+  }
+  // While the account is locked, every peer that already failed is refused without a
+  // hash, and each new peer gets a single guess before it is refused too.
+  const retryAfter = [];
+  for (let index = 0; index < 20; index++) {
+    const ip = `10.3.1.${index}`;
+    const before = app.counts().verifications;
+    assert.equal((await guess(next(), ip)).status, 401);
+    guesses++;
+    const refused = await guess(next(), ip);
+    assert.equal(refused.status, 429, ip);
+    assert.equal(app.counts().verifications, before + 1);
+    retryAfter.push(Number(refused.headers["Retry-After"]));
+  }
+  for (let index = 0; index < 10; index++)
+    assert.equal((await guess(next(), `10.3.0.${index}`)).status, 429);
+  assert.equal(guesses, 30, "thirty peers got thirty guesses, not a quota each");
+  assert.deepEqual(retryAfter.slice(0, 5), [120, 240, 480, 900, 900], "the lock backs off");
+  // Addresses within one IPv6 /64 are one peer.
+  assert.equal((await guess(next(), "2001:db8:5:6::1")).status, 401);
+  assert.equal((await guess(next(), "2001:db8:5:6::2")).status, 429);
+  assert.equal((await guess(next(), "2001:db8:5:6:a:b:c:d")).status, 429);
+  // A refused peer learns nothing about whether its PIN was correct.
+  assert.equal((await guess("4821", "10.3.0.0")).status, 429);
+  time += 15 * 60_000;
+  assert.equal((await guess(next(), "10.3.0.0")).status, 401);
+  assert.equal((await guess("4821", "10.3.0.1")).status, 429, "a guess after the lock re-locks");
+});
+
+test("an owner password change clears the owner lockout", async () => {
+  const app = await routes(openQuota);
+  const login = (password, ip) => app.login(request({ restaurantCode: "TEST", password }, ip));
+  for (let index = 0; index < 10; index++) await login("wrong", `10.4.0.${index}`);
+  assert.equal((await login("correct", "10.4.0.1")).status, 429);
+  assert.equal(
+    (
+      await app.change(
+        request({ currentPassword: "correct", newPassword: "Replacement123!" }, "10.4.1.1")
+      )
+    ).status,
+    200
+  );
+  assert.equal((await login("correct", "10.4.0.1")).status, 200, "earlier guesses are forgotten");
 });
 
 test("owner password guesses through login and password change share one lockout", async () => {
@@ -247,13 +354,13 @@ test("owner password guesses through login and password change share one lockout
     assert.equal(result.status, 401);
   }
   assert.equal(
-    (await app.login(request({ restaurantCode: "TEST", password: "correct" }, "10.1.1.1"))).status,
+    (await app.login(request({ restaurantCode: "TEST", password: "correct" }, "10.1.0.1"))).status,
     429
   );
   assert.equal(
     (
       await app.change(
-        request({ currentPassword: "correct", newPassword: "Replacement123!" }, "10.1.1.2")
+        request({ currentPassword: "correct", newPassword: "Replacement123!" }, "10.1.0.2")
       )
     ).status,
     429

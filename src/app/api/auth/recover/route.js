@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { hashCredential } from "@/lib/auth-local";
+import { clearAccountLockout } from "@/lib/auth-throttle.cjs";
 import { readAuthenticationBody } from "@/lib/authentication-body.mjs";
 import { disconnectAllSockets, invalidateAuthConfigCache } from "@/lib/security-policy.cjs";
 import {
@@ -66,6 +67,8 @@ export async function POST(request) {
         },
         { status: 400 }
       );
+    // The recovered owner must be able to sign in at once, even after a lockout.
+    clearAccountLockout("owner");
     invalidateAuthConfigCache();
     disconnectAllSockets(global.io);
     return NextResponse.json({ success: true, redirectTo: "/login" });

@@ -122,7 +122,12 @@ exercises that check with real signed sessions.
 per-account lockout: ten guesses from any number of addresses lock a staff name or
 the owner (login and password change share it) with backoff from one to fifteen
 minutes, unknown names behave identically, and every login outcome spends exactly
-one credential hash.
+one credential hash. Wrong restaurant codes from several peers never lock an
+account; a locked account refuses only peers that failed against it, so the server
+computer and clean LAN devices still sign in, while peers rotating addresses (or
+one IPv6 /64) get a single guess each. Owner recovery, password changes and staff
+PIN resets clear the lockout (`owner-recovery.test.cjs`,
+`staff-route-bootstrap.test.mjs`).
 
 `trusted-client.test.cjs` checks that client address headers are ignored without
 the server's per-process proof, that stamping replaces client-supplied copies and

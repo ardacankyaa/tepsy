@@ -6,6 +6,7 @@ import prisma from "@/lib/db";
 import { credentialSessionVersion, hashCredential, sessionFromRequest } from "@/lib/auth-local";
 import { currentStaffSession, disconnectStaffSockets } from "@/lib/security-policy.cjs";
 import { normalizeStaffCreate, normalizeStaffUpdate } from "@/lib/staff-input.cjs";
+import { clearAccountLockout, loginAccountKey } from "@/lib/auth-throttle.cjs";
 
 async function authorize(request) {
   const config = await prisma.restaurantConfig.findFirst({
@@ -46,6 +47,8 @@ export async function POST(request) {
     const user = await prisma.staffUser.create({
       data: { name, role, pinHash: hashCredential(pin) },
     });
+    // Earlier guesses against this name do not apply to the new PIN.
+    clearAccountLockout(loginAccountKey(user.name));
     return NextResponse.json(publicUser(user), { status: 201 });
   } catch (error) {
     if (error?.code === "invalid-json-body")
@@ -70,9 +73,11 @@ export async function PUT(request) {
   try {
     const body = await readRequestJson(request);
     const update = normalizeStaffUpdate(body);
+    let previousName = null;
     const user = await prisma.$transaction(async (tx) => {
       const target = await tx.staffUser.findUnique({ where: { id: body.id } });
       if (!target) return null;
+      previousName = target.name;
       if (actor.userId !== "owner" && (target.role === "ADMIN" || update.role === "ADMIN"))
         return false;
       return tx.staffUser.update({
@@ -87,6 +92,10 @@ export async function PUT(request) {
     });
     if (user === false) return ownerOnly();
     if (!user) return NextResponse.json({ error: "Personel bulunamadı." }, { status: 404 });
+    // A PIN reset lifts any sign-in lockout for this member under the old or new name.
+    if (update.pin !== undefined)
+      for (const name of new Set([previousName, user.name]))
+        if (name) clearAccountLockout(loginAccountKey(name));
     disconnectStaffSockets(global.io, user.id);
     return NextResponse.json(publicUser(user));
   } catch (error) {

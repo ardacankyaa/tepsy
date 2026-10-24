@@ -83,6 +83,19 @@ The login page provides **Forgot password** / **Şifremi unuttum**. For an owner
    is preserved. If the response is lost, try the new password before generating
    another recovery code.
 
+### Sign-in limits
+
+Each device may make eight sign-in attempts per 15 minutes. Ten wrong passwords or
+PINs for one account lock it for one minute, doubling up to fifteen minutes while
+wrong guesses continue. A locked account refuses only the devices that entered a
+wrong password or PIN for it; other devices, and the server computer itself
+(`http://localhost`), can still sign in. A wrong restaurant code does not count
+toward the account. Failed guesses are forgotten after 24 hours without new ones.
+
+To lift a lockout early, the owner can recover the password (below) or change it;
+assigning a new PIN in **Team** clears a staff member's lockout. Restarting TEPSY
+clears all sign-in limits. See [SECURITY.md](../SECURITY.md#sign-in-lockout).
+
 The browser cannot generate the recovery proof itself. Access to the server's
 private installation is required; there is no email password-reset service.
 For a forgotten staff PIN, the owner assigns a new PIN in **Team**.

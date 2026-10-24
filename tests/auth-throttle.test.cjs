@@ -118,3 +118,46 @@ test("account tracking capacity never evicts an active lockout", () => {
   assert.deepEqual(reserve("staff:c"), { allowed: false, retryAfter: 60 });
   assert.equal(states.size, 2);
 });
+
+test("account lockout refuses only peers that failed themselves and exempts the server computer", () => {
+  const { createAccountLockout } = require("../src/lib/auth-throttle.cjs");
+  let time = 100000;
+  const reserve = createAccountLockout({ now: () => time });
+  for (let index = 0; index < 10; index++) reserve("owner", request(`10.9.0.${index}`));
+  assert.deepEqual(reserve("owner", request("10.9.0.1")), { allowed: false, retryAfter: 60 });
+  const clean = reserve("owner", request("10.9.1.1"));
+  assert.equal(clean.allowed, true, "a peer without failures may still verify its credential");
+  assert.equal(reserve("owner", request("10.9.1.1")).allowed, false, "until it fails once");
+  for (const peer of ["127.0.0.1", "::1", "::ffff:127.0.0.1"])
+    for (let index = 0; index < 20; index++)
+      assert.equal(reserve("owner", request(peer)).exempt, true);
+  assert.equal(reserve("owner", request("127.0.0.2")).exempt, undefined);
+  assert.equal(reserve("owner", request("127.0.0.2")).allowed, false);
+  // A success credits only the succeeding peer's own failures.
+  const own = createAccountLockout({ now: () => time });
+  for (let index = 0; index < 6; index++) own("staff:ali", request("10.9.2.1"));
+  for (let index = 0; index < 4; index++) own("staff:ali", request(`10.9.3.${index}`));
+  assert.equal(own("staff:ali", request("10.9.2.1")).allowed, false);
+  own("staff:ali", request("10.9.4.1")).complete(true);
+  assert.equal(own("staff:ali", request("10.9.2.1")).allowed, false, "others' failures remain");
+  time += 15 * 60_000;
+  own("staff:ali", request("10.9.2.1")).complete(true);
+  for (let index = 0; index < 5; index++)
+    assert.equal(own("staff:ali", request(`10.9.5.${index}`)).allowed, true);
+  assert.equal(own("staff:ali", request("10.9.5.0")).allowed, true, "four failures, not ten");
+});
+
+test("lockout peers group an IPv6 /64 and normalize IPv4-mapped addresses", () => {
+  const { lockoutPeer, createAccountLockout } = require("../src/lib/auth-throttle.cjs");
+  assert.equal(lockoutPeer("192.168.1.5"), "192.168.1.5");
+  assert.equal(lockoutPeer("::FFFF:192.168.1.5"), "192.168.1.5");
+  assert.equal(lockoutPeer("2001:db8:1:2:3:4:5:6"), lockoutPeer("2001:DB8:1:2::9"));
+  assert.notEqual(lockoutPeer("2001:db8:1:2::1"), lockoutPeer("2001:db8:1:3::1"));
+  assert.equal(lockoutPeer("fe80::1%eth0"), lockoutPeer("fe80::2"));
+  assert.equal(lockoutPeer(""), "unknown");
+  assert.equal(lockoutPeer("not an address"), "unknown");
+  const states = new Map();
+  const reserve = createAccountLockout({ states, maxPeers: 2, now: () => 100000 });
+  for (const peer of ["10.8.0.1", "10.8.0.2", "10.8.0.3"]) reserve("staff:x", request(peer));
+  assert.deepEqual([...states.get("staff:x").peers.keys()], ["10.8.0.2", "10.8.0.3"]);
+});

@@ -19,9 +19,13 @@ import {
   invalidateAuthConfigCache,
 } from "@/lib/security-policy.cjs";
 
-import { reserveAccountAttempt, reserveAuthenticationAttempt } from "@/lib/auth-throttle.cjs";
+import {
+  clearAccountLockout,
+  reserveAccountAttempt,
+  reserveAuthenticationAttempt,
+} from "@/lib/auth-throttle.cjs";
 import { readAuthenticationBody } from "@/lib/authentication-body.mjs";
-import { trustedClientAddress } from "@/lib/trusted-client.cjs";
+import { isServerComputerRequest } from "@/lib/trusted-client.cjs";
 
 export async function POST(request) {
   try {
@@ -46,10 +50,7 @@ export async function POST(request) {
     if (!config) return NextResponse.json({ error: "Restoran ayarı bulunamadı." }, { status: 404 });
     const signedSession = sessionFromRequest(request);
     const canBootstrap = canBootstrapPasswordChange(config);
-    const clientIp = trustedClientAddress(request);
-    const isLoopback =
-      clientIp === "::1" || clientIp === "127.0.0.1" || clientIp === "::ffff:127.0.0.1";
-    if (canBootstrap && !isLoopback) {
+    if (canBootstrap && !isServerComputerRequest(request)) {
       return NextResponse.json(
         { error: "İlk yönetici şifresi yalnızca sunucu bilgisayarından belirlenebilir." },
         { status: 403 }
@@ -57,7 +58,7 @@ export async function POST(request) {
     }
     const attempt = canBootstrap ? null : reserveAuthenticationAttempt(request);
     // Owner password guesses here count against the same owner lockout as login.
-    const account = attempt?.allowed ? reserveAccountAttempt("owner") : attempt;
+    const account = attempt?.allowed ? reserveAccountAttempt("owner", request) : attempt;
     if (attempt && (!attempt.allowed || !account.allowed)) {
       const retryAfter = attempt.allowed ? account.retryAfter : attempt.retryAfter;
       return NextResponse.json(
@@ -92,6 +93,8 @@ export async function POST(request) {
       );
     attempt?.complete(true);
     account?.complete(true);
+    // Guesses against the old password are irrelevant once it has been replaced.
+    clearAccountLockout("owner");
     invalidateAuthConfigCache();
     disconnectAllSockets(global.io);
     const identity = {

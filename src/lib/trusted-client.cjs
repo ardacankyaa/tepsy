@@ -48,11 +48,21 @@ function trustedClientAddress(request) {
   );
 }
 
+// The canonical loopback addresses a browser on the TEPSY server computer uses.
+// Other 127.0.0.0/8 aliases are treated like any other peer.
+const SERVER_COMPUTER_ADDRESSES = ["127.0.0.1", "::1", "::ffff:127.0.0.1"];
+
+function isServerComputerRequest(request) {
+  return SERVER_COMPUTER_ADDRESSES.includes(trustedClientAddress(request));
+}
+
 module.exports = {
   CLIENT_ADDRESS_HEADER,
   LEGACY_CLIENT_ADDRESS_HEADER,
   PROOF_HEADER,
+  SERVER_COMPUTER_ADDRESSES,
   installTrustedClientProof,
+  isServerComputerRequest,
   stampTrustedClientAddress,
   trustedClientAddress,
 };
