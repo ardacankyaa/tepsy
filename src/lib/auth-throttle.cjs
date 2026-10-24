@@ -23,7 +23,11 @@ function createAuthenticationThrottle({
     const key = trustedClientAddress(request) || "unknown";
     let state = states.get(key);
     if (!state || state.resetAt <= timestamp) {
-      if (states.size >= maxClients) return { allowed: false, retryAfter: 60 };
+      // Map order is window start order. A full table forgets the oldest window
+      // rather than refusing every new client; an attacker who can fill it from
+      // that many addresses gains nothing it did not already have.
+      states.delete(key);
+      while (states.size >= maxClients) states.delete(states.keys().next().value);
       state = { count: 0, resetAt: timestamp + LOGIN_WINDOW_MS };
       states.set(key, state);
     }
@@ -107,6 +111,18 @@ function createAccountLockout({
   const expired = (state, timestamp) =>
     !state ||
     (state.lockedUntil <= timestamp && state.lastFailureAt + ACCOUNT_RETENTION_MS <= timestamp);
+  // A full table forgets the least recently failed account that is not locked
+  // (only if every account is locked, the least recently failed one) instead of
+  // refusing new names. Expired entries were already swept.
+  function evictAccount(timestamp) {
+    let victim = states.keys().next().value;
+    for (const [key, state] of states)
+      if (!(state.lockedUntil > timestamp)) {
+        victim = key;
+        break;
+      }
+    states.delete(victim);
+  }
   function reserveAccountAttempt(account, request) {
     if (isServerComputerRequest(request)) return { allowed: true, exempt: true, complete() {} };
     const timestamp = now();
@@ -133,10 +149,12 @@ function createAccountLockout({
         retryAfter: Math.max(1, Math.ceil((state.lockedUntil - timestamp) / 1000)),
       };
     if (!state) {
-      if (states.size >= maxAccounts) return { allowed: false, retryAfter: 60 };
+      if (states.size >= maxAccounts) evictAccount(timestamp);
       state = { failures: 0, lockedUntil: 0, lastFailureAt: timestamp, peers: new Map() };
-      states.set(key, state);
     }
+    // Keep accounts ordered from least to most recently failed.
+    states.delete(key);
+    states.set(key, state);
     if (!peer) {
       if (state.peers.size >= maxPeers) state.peers.delete(state.peers.keys().next().value);
       peer = { failures: 0, lastFailureAt: timestamp };

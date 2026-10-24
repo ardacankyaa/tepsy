@@ -34,17 +34,24 @@ test("success credits its own reservation but an old request cannot clear a newe
   assert.equal(reserve(request("192.168.1.33")).allowed, false);
 });
 
-test("full tracking state does not evict active quotas and expired clients free capacity", () => {
+test("a full client table evicts expired then oldest windows instead of refusing new clients", () => {
   let time = 100000;
   const states = new Map();
   const reserve = createAuthenticationThrottle({ states, maxClients: 2, now: () => time });
-  reserve(request("192.168.1.1"));
+  for (let index = 0; index < 8; index++) reserve(request("192.168.1.1"));
+  time += 1000;
   reserve(request("192.168.1.2"));
-  assert.deepEqual(reserve(request("192.168.1.3")), { allowed: false, retryAfter: 60 });
-  assert.equal(states.size, 2);
+  assert.equal(reserve(request("192.168.1.3")).allowed, true, "a new client is never refused");
+  assert.deepEqual([...states.keys()], ["192.168.1.2", "192.168.1.3"], "the oldest is evicted");
   time += 900000;
-  assert.equal(reserve(request("192.168.1.3")).allowed, true);
-  assert.equal(states.size, 1);
+  assert.equal(reserve(request("192.168.1.4")).allowed, true);
+  assert.deepEqual([...states.keys()], ["192.168.1.4"], "expired windows are swept first");
+  // A renewed window moves to the end, so it is not the next one evicted.
+  reserve(request("192.168.1.5"));
+  time += 900000;
+  reserve(request("192.168.1.5"));
+  reserve(request("192.168.1.6"));
+  assert.deepEqual([...states.keys()], ["192.168.1.5", "192.168.1.6"]);
 });
 
 test("legacy attempt state is reused and legacy peer header remains compatible", () => {
@@ -109,14 +116,35 @@ test("account lockout counts concurrent guesses, backs off and treats unknown na
   assert.equal(reserve("staff:nobody").allowed, true, "failures are forgotten after a day");
 });
 
-test("account tracking capacity never evicts an active lockout", () => {
+test("a full account table evicts instead of refusing, keeping active lockouts longest", () => {
   const { createAccountLockout } = require("../src/lib/auth-throttle.cjs");
+  let time = 100000;
   const states = new Map();
-  const reserve = createAccountLockout({ states, maxAccounts: 2, now: () => 100000 });
-  reserve("staff:a");
-  reserve("staff:b");
-  assert.deepEqual(reserve("staff:c"), { allowed: false, retryAfter: 60 });
-  assert.equal(states.size, 2);
+  const reserve = createAccountLockout({ states, maxAccounts: 3, now: () => time });
+  for (let index = 0; index < 10; index++) reserve("staff:locked", request());
+  time += 1000;
+  reserve("staff:a", request());
+  time += 1000;
+  reserve("staff:b", request());
+  time += 1000;
+  assert.equal(reserve("staff:c", request()).allowed, true, "a new name is never refused");
+  assert.deepEqual([...states.keys()], ["staff:locked", "staff:b", "staff:c"]);
+  assert.equal(reserve("staff:locked", request()).allowed, false, "the lockout survives");
+  // Recent failures move an account to the end of the eviction order.
+  reserve("staff:b", request());
+  reserve("staff:d", request());
+  assert.deepEqual([...states.keys()], ["staff:locked", "staff:b", "staff:d"]);
+  // Expired accounts are swept before anything else is evicted.
+  time += 24 * 60 * 60 * 1000;
+  reserve("staff:e", request());
+  assert.deepEqual([...states.keys()], ["staff:e"]);
+  // Only when every account is locked does the least recently failed lock go.
+  for (const name of ["staff:x", "staff:y", "staff:z"])
+    for (let index = 0; index < 10; index++) reserve(name, request());
+  assert.equal(reserve("staff:new", request()).allowed, true);
+  assert.equal(states.has("staff:e"), false);
+  assert.equal(states.has("staff:x"), false);
+  assert.equal(reserve("staff:y", request()).allowed, false);
 });
 
 test("account lockout refuses only peers that failed themselves and exempts the server computer", () => {
