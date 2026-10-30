@@ -52,14 +52,14 @@
     "eslint-plugin-react-hooks": "7.1.1",
     "globals": "17.13.0",
     "playwright": "1.64.1",
-    "postcss": "8.5.31",
+    "postcss": "8.5.32",
     "prettier": "3.9.10",
     "prisma": "^7.10.1",
     "tailwindcss": "4.3.3"
   },
   "overrides": {
     "glob": "13.0.6",
-    "postcss": "8.5.31",
+    "postcss": "8.5.32",
     "engine.io": "6.6.11",
     "sharp": "0.35.5",
     "source-map-js": "1.2.2",
